@@ -14,12 +14,16 @@ permissions:
   packages: read
 
 jobs:
+  # ============================================================
+  # Rust workspace (firmware, api)
+  # ============================================================
   rust:
     name: Rust (fmt, clippy, test)
     runs-on: ubuntu-latest
+    if: github.repository == 'QuackRobotics/quack-firmware' || github.repository == 'QuackRobotics/quack-api'
     defaults:
       run:
-        working-directory: ${{ github.repository == 'QuackRobotics/quack-firmware' && 'quack-firmware' || github.repository == 'QuackRobotics/quack-api' && 'quack-api' || '.' }}
+        working-directory: ${{ github.repository == 'QuackRobotics/quack-firmware' && 'quack-firmware' || 'quack-api' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,12 +47,16 @@ jobs:
           path: target/thumbv7em-none-eabihf/release/quack-firmware
           retention-days: 30
 
+  # ============================================================
+  # Python (ml, sim, hardware validation)
+  # ============================================================
   python:
     name: Python (ruff, pytest, type-check)
     runs-on: ubuntu-latest
+    if: github.repository == 'QuackRobotics/quack-ml' || github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-hardware'
     defaults:
       run:
-        working-directory: ${{ github.repository == 'QuackRobotics/quack-ml' && 'quack-ml' || github.repository == 'QuackRobotics/quack-sim' && 'quack-sim' || github.repository == 'QuackRobotics/quack-hardware' && 'quack-hardware' || '.' }}
+        working-directory: ${{ github.repository == 'QuackRobotics/quack-ml' && 'quack-ml' || github.repository == 'QuackRobotics/quack-sim' && 'quack-sim' || 'quack-hardware' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -71,6 +79,9 @@ jobs:
           flags: python
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # ============================================================
+  # TypeScript/JavaScript (dashboard, SDKs)
+  # ============================================================
   typescript:
     name: TypeScript (prettier, eslint, test, build)
     runs-on: ubuntu-latest
@@ -96,6 +107,9 @@ jobs:
           path: dist
           retention-days: 30
 
+  # ============================================================
+  # Markdown lint (all repos)
+  # ============================================================
   markdown:
     name: Markdown lint
     runs-on: ubuntu-latest
@@ -105,16 +119,22 @@ jobs:
         with:
           args: '**/*.md'
 
+  # ============================================================
+  # Docker lint (all repos with Dockerfile)
+  # ============================================================
   docker:
     name: Docker lint (hadolint)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3
+      - uses: hadolint/hadolint-action@master
         with:
           recursive: true
           failure-threshold: error
 
+  # ============================================================
+  # Protobuf (api)
+  # ============================================================
   protobuf:
     name: Protobuf (buf format, lint, breaking)
     runs-on: ubuntu-latest
@@ -130,6 +150,9 @@ jobs:
       - if: github.event_name == 'pull_request'
         run: buf breaking --against-input '.git#branch=main'
 
+  # ============================================================
+  # Security scans
+  # ============================================================
   security:
     name: Security (cargo-audit, pip-audit, CodeQL)
     runs-on: ubuntu-latest
@@ -138,7 +161,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/audit-check@v1
+      - if: github.repository == 'QuackRobotics/quack-firmware' || github.repository == 'QuackRobotics/quack-api'
+        uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - if: github.repository == 'QuackRobotics/quack-ml' || github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-hardware'
@@ -153,6 +177,9 @@ jobs:
         with:
           category: "/language:${{ matrix.language }}"
 
+  # ============================================================
+  # SBOM Generation
+  # ============================================================
   sbom:
     name: Generate SBOM
     runs-on: ubuntu-latest
@@ -176,6 +203,9 @@ jobs:
           path: sbom-*.json
           retention-days: 90
 
+  # ============================================================
+  # Summary gate
+  # ============================================================
   ci-gate:
     name: CI Gate (required status check)
     runs-on: ubuntu-latest
@@ -183,7 +213,7 @@ jobs:
     if: always()
     steps:
       - run: |
-          if [[ "${{ needs.rust.result }}" != "success" ]]; then exit 1; fi
+          if [[ "${{ needs.rust.result }}" != "success" && "${{ needs.rust.result }}" != "skipped" ]]; then exit 1; fi
           if [[ "${{ needs.python.result }}" != "success" && "${{ needs.python.result }}" != "skipped" ]]; then exit 1; fi
           if [[ "${{ needs.typescript.result }}" != "success" && "${{ needs.typescript.result }}" != "skipped" ]]; then exit 1; fi
           if [[ "${{ needs.markdown.result }}" != "success" ]]; then exit 1; fi
