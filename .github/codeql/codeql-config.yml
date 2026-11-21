@@ -1,0 +1,30 @@
+name: "Quack Robotics CodeQL Config"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+paths-ignore:
+  - "**/target/**"
+  - "**/node_modules/**"
+  - "**/.venv/**"
+  - "**/__pycache__/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/*.min.js"
+  - "**/*.generated.*"
+  - "docs/**"
+  - "*.md"
+
+language-config:
+  rust:
+    build-mode: "autobuild"
+  python:
+    setup-script: |
+      pip install -e .[dev] 2>/dev/null || true
+  javascript:
+    build-mode: "none"
+  typescript:
+    build-mode: "none"
