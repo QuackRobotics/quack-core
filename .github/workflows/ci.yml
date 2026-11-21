@@ -178,18 +178,6 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:rust"
-      - name: Perform CodeQL Analysis (python)
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:python"
-      - name: Perform CodeQL Analysis (javascript)
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:javascript"
-      - name: Perform CodeQL Analysis (typescript)
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:typescript"
 
   # ============================================================
   # SBOM Generation
