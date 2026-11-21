@@ -69,7 +69,7 @@ jobs:
         working-directory: ${{ github.repository == 'QuackRobotics/quack-ml' && 'quack-ml' || github.repository == 'QuackRobotics/quack-sim' && 'quack-sim' || 'quack-hardware' }}
       - run: pytest --cov=. --cov-report=xml --cov-fail-under=60
         working-directory: ${{ github.repository == 'QuackRobotics/quack-ml' && 'quack-ml' || github.repository == 'QuackRobotics/quack-sim' && 'quack-sim' || 'quack-hardware' }}
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: python
