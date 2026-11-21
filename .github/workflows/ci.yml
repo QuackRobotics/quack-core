@@ -151,10 +151,10 @@ jobs:
         run: buf breaking --against-input '.git#branch=main'
 
   # ============================================================
-  # Security scans
+  # Security scans (cargo-audit, pip-audit only; CodeQL is separate workflow)
   # ============================================================
   security:
-    name: Security (cargo-audit, pip-audit, CodeQL)
+    name: Security (cargo-audit, pip-audit)
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -169,15 +169,6 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit --desc --format=json --output=pip-audit.json || true
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: rust, python, javascript, typescript
-          queries: security-extended,security-and-quality
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:rust"
 
   # ============================================================
   # SBOM Generation
