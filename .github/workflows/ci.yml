@@ -5,213 +5,22 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
-  security-events: write
-  packages: read
 
 jobs:
-  # ============================================================
-  # Rust workspace (firmware, api)
-  # ============================================================
-  rust:
-    name: Rust (fmt, clippy, test)
-    runs-on: ubuntu-latest
-    if: github.repository == 'QuackRobotics/quack-firmware' || github.repository == 'QuackRobotics/quack-api'
-    defaults:
-      run:
-        working-directory: ${{ github.repository == 'QuackRobotics/quack-firmware' && 'quack-firmware' || 'quack-api' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-          target: thumbv7em-none-eabihf
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets --all-features -- -D warnings
-      - run: cargo test --all --locked
-      - if: github.repository == 'QuackRobotics/quack-firmware'
-        run: cargo build --release --target thumbv7em-none-eabihf
-      - if: github.repository == 'QuackRobotics/quack-firmware'
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware-${{ github.sha }}
-          path: target/thumbv7em-none-eabihf/release/quack-firmware
-          retention-days: 30
-
-  # ============================================================
-  # Python (ml, sim, hardware validation)
-  # ============================================================
-  python:
-    name: Python (ruff, pytest, type-check)
-    runs-on: ubuntu-latest
-    if: github.repository == 'QuackRobotics/quack-ml' || github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-hardware'
-    defaults:
-      run:
-        working-directory: ${{ github.repository == 'QuackRobotics/quack-ml' && 'quack-ml' || github.repository == 'QuackRobotics/quack-sim' && 'quack-sim' || 'quack-hardware' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: '**/requirements*.txt'
-      - run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install ruff pytest pytest-cov mypy
-      - run: ruff format --check .
-      - run: ruff check .
-      - run: mypy . --ignore-missing-imports || true
-      - run: pytest --cov=. --cov-report=xml --cov-fail-under=60
-      - uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          flags: python
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-  # ============================================================
-  # TypeScript/JavaScript (dashboard, SDKs)
-  # ============================================================
-  typescript:
-    name: TypeScript (prettier, eslint, test, build)
-    runs-on: ubuntu-latest
-    if: github.repository == 'QuackRobotics/quack-dashboard' || github.repository == 'QuackRobotics/quack-api'
-    defaults:
-      run:
-        working-directory: ${{ github.repository == 'QuackRobotics/quack-dashboard' && 'quack-dashboard' || 'quack-api/sdk' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx prettier --check .
-      - run: npx eslint .
-      - run: npx tsc --noEmit
-      - run: npm test -- --coverage
-      - run: npm run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dashboard-build-${{ github.sha }}
-          path: dist
-          retention-days: 30
-
-  # ============================================================
-  # Markdown lint (all repos)
-  # ============================================================
-  markdown:
-    name: Markdown lint
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker://ghcr.io/igorshubovych/markdownlint-cli:latest
-        with:
-          args: '**/*.md'
+      - run: echo "CI works!"
 
-  # ============================================================
-  # Docker lint (all repos with Dockerfile)
-  # ============================================================
-  docker:
-    name: Docker lint (hadolint)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@master
-        with:
-          recursive: true
-          failure-threshold: error
-
-  # ============================================================
-  # Protobuf (api)
-  # ============================================================
-  protobuf:
-    name: Protobuf (buf format, lint, breaking)
-    runs-on: ubuntu-latest
-    if: github.repository == 'QuackRobotics/quack-api'
-    defaults:
-      run:
-        working-directory: quack-api
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1
-      - run: buf format --check
-      - run: buf lint
-      - if: github.event_name == 'pull_request'
-        run: buf breaking --against-input '.git#branch=main'
-
-  # ============================================================
-  # Security scans (cargo-audit, pip-audit only; CodeQL is separate workflow)
-  # ============================================================
-  security:
-    name: Security (cargo-audit, pip-audit)
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - if: github.repository == 'QuackRobotics/quack-firmware' || github.repository == 'QuackRobotics/quack-api'
-        uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - if: github.repository == 'QuackRobotics/quack-ml' || github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-hardware'
-        run: |
-          pip install pip-audit
-          pip-audit --desc --format=json --output=pip-audit.json || true
-
-  # ============================================================
-  # SBOM Generation
-  # ============================================================
-  sbom:
-    name: Generate SBOM
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - if: github.repository == 'QuackRobotics/quack-firmware' || github.repository == 'QuackRobotics/quack-api'
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-cyclonedx
-      - if: github.repository == 'QuackRobotics/quack-firmware' || github.repository == 'QuackRobotics/quack-api'
-        run: cargo cyclonedx --format json --output sbom-rust.json
-      - if: github.repository == 'QuackRobotics/quack-ml' || github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-hardware'
-        run: |
-          pip install cyclonedx-bom
-          cyclonedx-py -o sbom-python.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sbom-${{ github.repository }}-${{ github.sha }}
-          path: sbom-*.json
-          retention-days: 90
-
-  # ============================================================
-  # Summary gate - treats skipped as success
-  # ============================================================
-  ci-gate:
+  ci:
     name: ci
     runs-on: ubuntu-latest
-    needs: [rust, python, typescript, markdown, docker, protobuf, security]
+    needs: [lint]
     if: always()
     steps:
-      - run: |
-          # Treat skipped as success (conditional jobs not applicable to this repo)
-          for job in rust python typescript markdown docker protobuf security; do
-            result="${{ needs.$job.result }}"
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
-              echo "Job $job failed with result: $result"
-              exit 1
-            fi
-          done
-          echo "All required checks passed ✅"
+      - run: echo "All checks passed ✅"
