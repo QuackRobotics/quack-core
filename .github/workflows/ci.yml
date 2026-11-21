@@ -41,7 +41,7 @@ jobs:
       - if: github.repository == 'QuackRobotics/quack-firmware'
         run: cargo build --release --target thumbv7em-none-eabihf
       - if: github.repository == 'QuackRobotics/quack-firmware'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: firmware-${{ github.sha }}
           path: target/thumbv7em-none-eabihf/release/quack-firmware
@@ -101,7 +101,7 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test -- --coverage
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dashboard-build-${{ github.sha }}
           path: dist
@@ -190,7 +190,7 @@ jobs:
         run: |
           pip install cyclonedx-bom
           cyclonedx-py -o sbom-python.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ github.repository }}-${{ github.sha }}
           path: sbom-*.json
