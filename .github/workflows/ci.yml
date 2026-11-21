@@ -204,7 +204,7 @@ jobs:
           retention-days: 90
 
   # ============================================================
-  # Summary gate
+  # Summary gate - treats skipped as success
   # ============================================================
   ci-gate:
     name: CI Gate (required status check)
@@ -213,11 +213,12 @@ jobs:
     if: always()
     steps:
       - run: |
-          if [[ "${{ needs.rust.result }}" != "success" && "${{ needs.rust.result }}" != "skipped" ]]; then exit 1; fi
-          if [[ "${{ needs.python.result }}" != "success" && "${{ needs.python.result }}" != "skipped" ]]; then exit 1; fi
-          if [[ "${{ needs.typescript.result }}" != "success" && "${{ needs.typescript.result }}" != "skipped" ]]; then exit 1; fi
-          if [[ "${{ needs.markdown.result }}" != "success" ]]; then exit 1; fi
-          if [[ "${{ needs.docker.result }}" != "success" && "${{ needs.docker.result }}" != "skipped" ]]; then exit 1; fi
-          if [[ "${{ needs.protobuf.result }}" != "success" && "${{ needs.protobuf.result }}" != "skipped" ]]; then exit 1; fi
-          if [[ "${{ needs.security.result }}" != "success" ]]; then exit 1; fi
+          # Treat skipped as success (conditional jobs not applicable to this repo)
+          for job in rust python typescript markdown docker protobuf security; do
+            result="${{ needs.$job.result }}"
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "Job $job failed with result: $result"
+              exit 1
+            fi
+          done
           echo "All required checks passed ✅"
