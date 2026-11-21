@@ -169,13 +169,27 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit --desc --format=json --output=pip-audit.json || true
-      - uses: github/codeql-action/init@v3
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
           languages: rust, python, javascript, typescript
           queries: security-extended,security-and-quality
-      - uses: github/codeql-action/analyze@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:rust"
+      - name: Perform CodeQL Analysis (python)
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
+      - name: Perform CodeQL Analysis (javascript)
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+      - name: Perform CodeQL Analysis (typescript)
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:typescript"
 
   # ============================================================
   # SBOM Generation
