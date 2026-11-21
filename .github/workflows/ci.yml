@@ -200,7 +200,7 @@ jobs:
   # Summary gate - treats skipped as success
   # ============================================================
   ci-gate:
-    name: CI Gate (required status check)
+    name: ci
     runs-on: ubuntu-latest
     needs: [rust, python, typescript, markdown, docker, protobuf, security]
     if: always()
