@@ -1,0 +1,17 @@
+joint,group,servo_model,bus,notes
+left_hip_yaw,left_leg,STS3215-7.4V-C001,STS,
+left_hip_roll,left_leg,STS3215-7.4V-C001,STS,
+left_hip_pitch,left_leg,STS3215-7.4V-C001,STS,
+left_knee,left_leg,STS3215-7.4V-C001,STS,
+left_ankle,left_leg,STS3215-7.4V-C001,STS,
+right_hip_yaw,right_leg,STS3215-7.4V-C001,STS,
+right_hip_roll,right_leg,STS3215-7.4V-C001,STS,
+right_hip_pitch,right_leg,STS3215-7.4V-C001,STS,
+right_knee,right_leg,STS3215-7.4V-C001,STS,
+right_ankle,right_leg,STS3215-7.4V-C001,STS,
+neck_pitch,head,STS3215-7.4V-C001,STS,
+head_pitch,head,STS3215-7.4V-C001,STS,
+head_yaw,head,STS3215-7.4V-C001,STS,
+head_roll,head,STS3215-7.4V-C001,STS,
+left_antenna,antenna,SG90,Pi PWM GPIO12 (pin 32),off STS bus
+right_antenna,antenna,SG90,Pi PWM GPIO13 (pin 33),off STS bus
