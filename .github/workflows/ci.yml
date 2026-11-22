@@ -37,11 +37,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        if: ${{ hashFiles('**/Cargo.toml') != '' }}
+        if: ${{ hashFiles('**/*.rs') != '' }}
       - uses: Swatinem/rust-cache@v2
-        if: ${{ hashFiles('**/Cargo.toml') != '' }}
+        if: ${{ hashFiles('**/*.rs') != '' }}
       - run: cargo test --all-targets --all-features
-        if: ${{ hashFiles('**/Cargo.toml') != '' }}
+        if: ${{ hashFiles('**/*.rs') != '' }}
 
   test-python:
     name: Test (Python)
