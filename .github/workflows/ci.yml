@@ -116,11 +116,18 @@ jobs:
         run: |
           cargo install cargo-audit --locked 2>/dev/null || true
           cargo audit
-      - name: pip-audit
-        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles('**/requirements*.txt') != '' }}
+        with:
+          python-version: '3.11'  # same Python the sim deps are pinned for
+      - name: pip-audit (our requirements files, not the runner's system Python)
+        if: ${{ hashFiles('**/requirements*.txt') != '' }}
         run: |
           pip install pip-audit
-          pip-audit
+          git ls-files '*requirements*.txt' | while read -r req; do
+            echo "pip-audit -r $req"
+            pip-audit -r "$req"
+          done
 
   sbom:
     name: SBOM (Syft)
