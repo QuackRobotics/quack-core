@@ -1,6 +1,6 @@
 # Quack Robotics (quack-core)
 
-**Micro Duck** — A ~42 cm open-source bipedal robot, building on [Open Duck Mini v2](https://github.com/apirrone/Open_Duck_Mini) by apirrone (Apache-2.0).
+**Micro Duck** — A ~42 cm open-source bipedal robot, building on [Open Duck Mini v2](https://github.com/apirrone/Open_Duck_Mini) by apirrone.
 
 ## Repository Structure
 
@@ -16,8 +16,20 @@
 
 ## Upstream Attribution
 
-This project is derived from **Open Duck Mini v2** by [apirrone](https://github.com/apirrone) (Apache-2.0).  
+This project uses assets from **Open Duck Mini v2** by [apirrone](https://github.com/apirrone).
+
+| Asset | Source | License Status |
+|-------|--------|----------------|
+| CAD / STL, MJCF (`mini_bdx/robots/open_duck_mini_v2/robot.xml`), ONNX policies (`BEST_WALK_ONNX*.onnx`) | `apirrone/Open_Duck_Mini` (v2, commit `b23317a`) | **Apache-2.0** |
+| Runtime code | `apirrone/Open_Duck_Mini_Runtime` | **No licence found** — reference only, not redistributed |
+| Training code / Playground | `apirrone/Open_Duck_Playground` | **No licence found** — reference only, not redistributed |
+| BOM spreadsheet | Google Sheets (external) | **Licence unstated** |
+| Onshape CAD (live) | Onshape document (external) | **Licence unstated** |
+| Build/assembly guides | Tnkr.ai (external) | **Site terms apply** |
+
 See [`NOTICE`](NOTICE) for full attribution and license details.
+
+Until licences are added to the Runtime and Playground repos, we **do not vendor or copy** their code. The CI sim gate pulls MJCF/ONNX only from the Apache-2.0 repo at a pinned commit.
 
 ## Quick Start
 
