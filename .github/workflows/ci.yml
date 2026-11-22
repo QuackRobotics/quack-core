@@ -82,7 +82,7 @@ jobs:
       - name: Install MuJoCo + Python deps
         run: |
           sudo apt-get update && sudo apt-get install -y \
-            libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender1 libxfixes3 libxi6
+            libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 libxfixes3 libxi6
           pip install mujoco==3.2.* onnx onnxruntime numpy
 
       - name: Fetch upstream MJCF + ONNX policy (Open Duck Mini v2 @ b23317a)
