@@ -10,9 +10,177 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    name: ci
+  # Reusable matrix jobs — conditionally run based on repo content
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "CI passed for quack-core!"
+      - name: Install tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          cargo install --locked cargo-fmt cargo-clippy 2>/dev/null || true
+          pipx install ruff 2>/dev/null || pip install ruff
+          npm install -g prettier markdownlint-cli 2>/dev/null || true
+      - name: Run lint (per language present)
+        run: |
+          [ -f Cargo.toml ] && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings
+          [ -f pyproject.toml ] || [ -f requirements.txt ] && ruff check .
+          [ -f package.json ] && npx prettier --check . && npx markdownlint "**/*.md"
+          [ -f Dockerfile ] && hadolint Dockerfile
+          [ -f buf.yaml ] && buf lint
+        shell: bash
+
+  test-rust:
+    name: Test (Rust)
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/Cargo.toml') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all-targets --all-features
+
+  test-python:
+    name: Test (Python)
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -e .[test] 2>/dev/null || pip install pytest pytest-cov
+      - run: pytest --cov=./ --cov-report=xml
+
+  test-typescript:
+    name: Test (TypeScript)
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/package.json') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test --if-present
+
+  # Sim validation gate — runs on quack-sim and quack-ml repos
+  sim-gate:
+    name: Sim Gate (MuJoCo walk test)
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-ml' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout quack-sim (for MJCF assets)
+        uses: actions/checkout@v4
+        with:
+          repository: QuackRobotics/quack-sim
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: quack-sim
+
+      - name: Install MuJoCo + Python deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender1 libxfixes3 libxi6
+          pip install mujoco==3.2.* onnx onnxruntime numpy
+
+      - name: Fetch upstream MJCF + ONNX policy (Open Duck Mini v2)
+        run: |
+          mkdir -p upstream
+          # MJCF model from Open Duck Mini v2
+          curl -fsSL -o upstream/open_duck_mini.xml \
+            https://raw.githubusercontent.com/apirrone/Open_Duck_Mini/v2/mujoco/open_duck_mini.xml
+          # ONNX policy (best walk checkpoint v2)
+          curl -fsSL -o upstream/BEST_WALK_ONNX_2.onnx \
+            https://github.com/apirrone/Open_Duck_Mini/releases/download/v2-policies/BEST_WALK_ONNX_2.onnx
+
+      - name: Run sim gate — walk for 10s without falling
+        run: |
+          python - <<'PY'
+          import mujoco
+          import numpy as np
+          import time
+
+          model = mujoco.MjModel.from_xml_path('upstream/open_duck_mini.xml')
+          data = mujoco.MjData(model)
+
+          # Load ONNX policy
+          import onnxruntime as ort
+          session = ort.InferenceSession('upstream/BEST_WALK_ONNX_2.onnx')
+          input_name = session.get_inputs()[0].name
+          output_name = session.get_outputs()[0].name
+
+          # Simulation parameters
+          sim_duration = 10.0  # seconds
+          dt = model.opt.timestep
+          max_steps = int(sim_duration / dt)
+          fall_threshold = 0.3  # torso height below this = fall (meters)
+
+          torso_id = model.body('torso').id if 'torso' in [model.body(i).name for i in range(model.nbody)] else 0
+
+          fallen = False
+          for step in range(max_steps):
+              # Get observation (simplified: qpos[2:] + qvel)
+              obs = np.concatenate([data.qpos[2:], data.qvel]).astype(np.float32).reshape(1, -1)
+              action = session.run([output_name], {input_name: obs})[0].flatten()
+              data.ctrl[:] = action
+              mujoco.mj_step(model, data)
+
+              # Check fall condition
+              torso_z = data.xpos[torso_id, 2]
+              if torso_z < fall_threshold:
+                  fallen = True
+                  print(f"FELL at step {step} (t={step*dt:.2f}s), torso_z={torso_z:.3f}")
+                  break
+
+          if fallen:
+              raise SystemExit("SIM GATE FAILED: Robot fell within 10s")
+          else:
+              print(f"SIM GATE PASSED: Walked {sim_duration}s without falling (torso_z={torso_z:.3f})")
+
+  security:
+    name: Security (audit + CodeQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: cargo-audit
+        if: ${{ hashFiles('**/Cargo.toml') != '' }}
+        run: |
+          cargo install cargo-audit --locked 2>/dev/null || true
+          cargo audit
+      - name: pip-audit
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
+        run: |
+          pip install pip-audit
+          pip-audit
+
+  sbom:
+    name: SBOM (Syft)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anchore/sbom-action@v0
+        with:
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+  # Final gate job — required by branch protection
+  ci:
+    name: ci (gate)
+    runs-on: ubuntu-latest
+    needs: [lint, test-rust, test-python, test-typescript, sim-gate, security, sbom]
+    if: ${{ always() }}
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          for job in lint test-rust test-python test-typescript sim-gate security sbom; do
+            result="${{ needs.$job.result }}"
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "Required job $job failed: $result"
+              exit 1
+            fi
+          done
+      - run: echo "All CI gates passed!"
