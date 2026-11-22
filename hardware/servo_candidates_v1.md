@@ -99,3 +99,17 @@ Plus idler bearings for STS3046 brackets (unpriced) and the 8 A UBEC (~same pric
 - [ST-3250-C001 (STS3250)](https://ftservo.github.io/ftservo-wiki/en/products/models/st-3250-c001/main/)
 - [ST-3095-C001 (STS3095)](https://ftservo.github.io/ftservo-wiki/en/products/models/st-3095-c001/main/)
 - Prices: [Alibaba STS3046](https://www.alibaba.com/product-detail/Feetech-40KG-Servo-7-4V-360_1601869336896.html) · [WowRobo STS3250 C002](https://shop.wowrobo.com/products/feetech-sts3250-c002-servo-12v-50kg-1-345-servo) · upstream BOM sheet (STS3215 €14)
+
+## Leg mass breakdown (Woz 2026-11-23, from upstream robot.urdf, onshape-to-robot export of Onshape doc 64074dfcfa379b37d8a47762)
+
+Every servo housing (WJ-WK00-0122/0123/0124 case parts = STS3215 case) appears as geometry in the link it is bolted to, one per link, 14 total, so onshape-to-robot's link masses include the servos. Per-part masses were not opened in Onshape (no access).
+
+| Link (per leg) | Mass (g) | Servo housing in it | Printed/other parts |
+|---|---|---|---|
+| hip_roll_assembly | 66.5 | hip roll servo | roll_motor_top/bottom, horns |
+| roll_to_pitch_assembly | 75.2 | hip pitch servo | roll_to_pitch, horns |
+| knee_and_ankle_assembly (thigh) | 124.1 | knee servo | cache, sheets, spacer, horns |
+| knee_and_ankle_assembly_2 (shin) | 72.6 | ankle servo | sheets, spacer, horns |
+| foot_assembly | 75.2 | none | foot PLA/TPU parts |
+
+Trunk (698.5 g) holds 2 hip-yaw + neck-pitch servos. Model total 2.0615 kg. Conclusion: an STS3046 swap is +34 g per servo (replace), not +89 g; COM/inertia of the thigh, shin and roll_to_pitch links also change (different body shape).
