@@ -159,7 +159,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: cargo-audit
-        if: ${{ hashFiles('**/Cargo.toml') != '' }}
+        if: ${{ hashFiles('**/Cargo.lock') != '' }}
         run: |
           cargo install cargo-audit --locked 2>/dev/null || true
           cargo audit
