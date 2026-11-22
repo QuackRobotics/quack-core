@@ -16,7 +16,7 @@ The Apache-2.0 license covers the following assets in apirrone/Open_Duck_Mini@b2
 
 The following upstream assets have UNSTATED or PENDING licenses:
 - Open_Duck_Mini_Runtime (separate repo): no LICENSE file found — used for reference only, licence pending, not redistributed
-- Open_Duck_Playground (separate repo): no LICENSE file found — used for reference only, licence pending, not redistributed
+- Open_Duck_Playground @ b9be205 (separate repo): no LICENSE file found — licence pending, not redistributed. The CI sim gate downloads its MJCF scene, meshes and reference-motion pickle at run time (sha256-pinned in sim/playground.SHA256SUMS); sim/sim_gate.py is our own reimplementation of its inference loop, citing file and line
 - BOM Google Sheet (external): licence unstated
 - Onshape live document (external): licence unstated
 - Tnkr.ai build guides (external): site terms apply

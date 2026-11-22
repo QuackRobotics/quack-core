@@ -55,6 +55,11 @@ jobs:
           cache: 'pip'
       - run: pip install -e .[test] 2>/dev/null || pip install pytest pytest-cov
         if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
+      - name: Install sim deps for sim/tests
+        if: ${{ hashFiles('sim/requirements.txt') != '' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
+          pip install -r sim/requirements.txt
       - run: pytest --cov=./ --cov-report=xml
         if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
 
@@ -73,86 +78,34 @@ jobs:
       - run: npm test --if-present
         if: ${{ hashFiles('**/package.json') != '' }}
 
-  # Sim validation gate — runs in ALL repos to validate upstream policy+MJCF
+  # Sim gate: run the upstream walking policy in MuJoCo (sim/sim_gate.py).
   sim-gate:
     name: Sim Gate (MuJoCo walk test)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11'  # mujoco 3.2.* has no wheel for newer runner Pythons
       - name: Install MuJoCo + Python deps
         run: |
-          sudo apt-get update && sudo apt-get install -y \
-            libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 libxfixes3 libxi6
-          pip install mujoco==3.2.* onnx onnxruntime numpy
-
-      - name: Fetch upstream MJCF + ONNX policy (Open Duck Mini v2 @ b23317a)
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
+          pip install -r sim/requirements.txt
+      - name: Fetch pinned upstream assets (sha256-verified)
+        run: bash sim/fetch_upstream.sh upstream
+      - name: Sim gate - walk 10 s at 0.15 m/s without falling, >= 0.5 m forward
+        run: python sim/sim_gate.py --upstream-dir upstream --cmd-x 0.15 --min-progress 0.5
+      - name: Negative control - zero-action policy must FAIL the gate
         run: |
-          mkdir -p upstream
-          # MJCF model from Open Duck Mini v2 (Apache-2.0)
-          curl -fsSL -o upstream/robot.xml \
-            https://raw.githubusercontent.com/apirrone/Open_Duck_Mini/b23317a/mini_bdx/robots/open_duck_mini_v2/robot.xml
-          # ONNX policy (best walk checkpoint v2) from same commit
-          curl -fsSL -o upstream/BEST_WALK_ONNX_2.onnx \
-            https://raw.githubusercontent.com/apirrone/Open_Duck_Mini/b23317a/BEST_WALK_ONNX_2.onnx
-
-      - name: Verify SHA256 of fetched assets
-        run: |
-          echo "a134222e3b789f491b5a4a4781c6d19c91c86ad4d8481795b6b03f5eab6e0c7a  upstream/robot.xml" | sha256sum -c -
-          echo "3c606f9381a1710cc8fecdb7442787dcbfce3ee9bc02a6f1224774ab2b3a1067  upstream/BEST_WALK_ONNX_2.onnx" | sha256sum -c -
-
-      - name: Run sim gate — walk for 10s without falling
-        run: |
-          python - <<'PY'
-          import mujoco
-          import numpy as np
-          import sys
-
-          model = mujoco.MjModel.from_xml_path('upstream/robot.xml')
-          data = mujoco.MjData(model)
-
-          # Load ONNX policy
-          import onnxruntime as ort
-          session = ort.InferenceSession('upstream/BEST_WALK_ONNX_2.onnx')
-          input_name = session.get_inputs()[0].name
-          output_name = session.get_outputs()[0].name
-
-          # Compute standing torso height from initial state (mj_forward on qpos0)
-          mujoco.mj_forward(model, data)
-          torso_id = model.body('torso').id if 'torso' in [model.body(i).name for i in range(model.nbody)] else 0
-          standing_z = data.xpos[torso_id, 2]
-          # Fall threshold = 50% of standing height (configurable)
-          fall_threshold = standing_z * 0.5
-          print(f"Standing torso_z = {standing_z:.3f} m, fall threshold = {fall_threshold:.3f} m")
-
-          # Simulation parameters
-          sim_duration = 10.0  # seconds
-          dt = model.opt.timestep
-          max_steps = int(sim_duration / dt)
-
-          fallen = False
-          for step in range(max_steps):
-              # Get observation (simplified: qpos[2:] + qvel)
-              obs = np.concatenate([data.qpos[2:], data.qvel]).astype(np.float32).reshape(1, -1)
-              action = session.run([output_name], {input_name: obs})[0].flatten()
-              data.ctrl[:] = action
-              mujoco.mj_step(model, data)
-
-              # Check fall condition
-              torso_z = data.xpos[torso_id, 2]
-              if torso_z < fall_threshold:
-                  fallen = True
-                  print(f"FELL at step {step} (t={step*dt:.2f}s), torso_z={torso_z:.3f} (threshold={fall_threshold:.3f})")
-                  break
-
-          if fallen:
-              print("SIM GATE FAILED: Robot fell within 10s")
-              sys.exit(1)
-          else:
-              print(f"SIM GATE PASSED: Walked {sim_duration}s without falling (final torso_z={torso_z:.3f})")
-
+          set +e
+          python sim/sim_gate.py --upstream-dir upstream --cmd-x 0.15 --min-progress 0.5 --sabotage zero-action
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "negative control expected exit 1 (gate failure), got $code"; exit 1
+          fi
+          echo "negative control OK: sabotaged policy was rejected"
   security:
     name: Security (audit + CodeQL)
     runs-on: ubuntu-latest
