@@ -24,48 +24,54 @@ jobs:
           npm install -g prettier markdownlint-cli 2>/dev/null || true
       - name: Run lint (per language present)
         run: |
-          [ -f Cargo.toml ] && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings
-          [ -f pyproject.toml ] || [ -f requirements.txt ] && ruff check .
-          [ -f package.json ] && npx prettier --check . && npx markdownlint "**/*.md"
-          [ -f Dockerfile ] && hadolint Dockerfile
-          [ -f buf.yaml ] && buf lint
+          if [ -f Cargo.toml ]; then cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings; fi
+          if [ -f pyproject.toml ] || [ -f requirements.txt ]; then ruff check .; fi
+          if [ -f package.json ]; then npx prettier --check . && npx markdownlint "**/*.md"; fi
+          if [ -f Dockerfile ]; then hadolint Dockerfile; fi
+          if [ -f buf.yaml ]; then buf lint; fi
         shell: bash
 
   test-rust:
     name: Test (Rust)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/Cargo.toml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        if: ${{ hashFiles('**/Cargo.toml') != '' }}
       - uses: Swatinem/rust-cache@v2
+        if: ${{ hashFiles('**/Cargo.toml') != '' }}
       - run: cargo test --all-targets --all-features
+        if: ${{ hashFiles('**/Cargo.toml') != '' }}
 
   test-python:
     name: Test (Python)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
         with:
           python-version: '3.11'
           cache: 'pip'
       - run: pip install -e .[test] 2>/dev/null || pip install pytest pytest-cov
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
       - run: pytest --cov=./ --cov-report=xml
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
 
   test-typescript:
     name: Test (TypeScript)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: ${{ hashFiles('**/package.json') != '' }}
         with:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+        if: ${{ hashFiles('**/package.json') != '' }}
       - run: npm test --if-present
+        if: ${{ hashFiles('**/package.json') != '' }}
 
   # Sim validation gate — runs in ALL repos to validate upstream policy+MJCF
   sim-gate:
@@ -172,18 +178,14 @@ jobs:
 
   # Final gate job — required by branch protection
   ci:
-    name: ci (gate)
+    name: ci
     runs-on: ubuntu-latest
     needs: [lint, test-rust, test-python, test-typescript, sim-gate, security, sbom]
     if: ${{ always() }}
     steps:
-      - name: Check all required jobs passed
+      - name: Fail if any required job failed or was cancelled
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: |
-          for job in lint test-rust test-python test-typescript sim-gate security sbom; do
-            result="${{ needs.$job.result }}"
-            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
-              echo "Required job $job failed: $result"
-              exit 1
-            fi
-          done
-      - run: echo "All CI gates passed!"
+          echo '${{ toJSON(needs) }}'
+          exit 1
+      - run: echo "All CI gates passed"
