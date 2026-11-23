@@ -231,3 +231,9 @@ At −12 dBFS the AUX pair peak is 1.5 A (SG90 budget) + 0.32 A = 1.82 A, agains
 - A separate LED needs a new GPIO, a new window in the shell and a new part.
 - A software-driven LED proves no more than an eye state does: the INMP441 is always powered from 3.3 V, so neither one is a hardware guarantee.
 - Recommendation: Luxo owns a distinct "listening" eye pattern. If a hardware privacy guarantee is wanted later, put a GPIO-switched load switch on the mic 3V3 (about 1.4 mA) and tie the indicator to that same switch. That is v2.
+
+## SD_MODE power-fail gate + GPIO16 (Woz 2026-11-23 18:40, PROPOSED)
+
+- **Primary: SD_MODE on GPIO4 (pin 7)** through the 100 Ω series R (harness Atlas condition 2), with a **100 kΩ pull-down to GND at the HAT**. The amp is muted whenever the Pi is in reset, unbooted or dead. The quack-audio driver drives it high only after CAPGOOD reads high and 5V_AUX is up. The PFO handler drives it low first (bench pass ≤ 50 µs, harness_neck_v1).
+- **GPIO16 fallback without a fork:** the HAT routes the SD_MODE net to GPIO4 through a fitted 0 Ω and to GPIO16 (pin 36) through a DNP 0 Ω. If the multi-codec simple-audio-card check fails and we move to `googlevoicehat-soundcard` (SD_MODE on GPIO16), swap the resistor. No overlay fork. GPIO16 is unused in the current pin map.
+- **Channel select:** a GPIO-high level selects one channel on the MAX98357A instead of (L+R)/2. The SD_MODE thresholds were not re-read this run, so bench check 3 (aplay + arecord) must also confirm audio in the slot we write. Firmware writes mono into both slots.
