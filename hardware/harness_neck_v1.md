@@ -130,6 +130,22 @@ So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands. Not all 16 are beh
 
 **Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: ≥ 40 A, ≤ 5 mΩ, with gate pulled to OFF by default so a broken neck wire = servos off.
 
+### Servo-power switch on the trunk board: Atlas's 7 conditions (APPROVED by Quack Chief 2026-11-23 09:44)
+
+The switch moves from the HAT to the trunk board. It is approved only with all seven of Atlas's conditions, which are design requirements for the trunk-board schematic:
+
+1. **High-side** switch (in the pack + line, so servo ground stays common with the Pi).
+2. **Gate off on an open wire.** A broken SW_EN conductor turns the servos off (pull-down to OFF on the trunk side). **SW_EN continuity is part of the neck flex test** (the 1,000-cycle yaw test above).
+3. Driven from a **Pi GPIO with a boot pull-down, active-high**, so the servos stay off through boot and reset.
+4. **SW_EN AND LTC3226 PFO** on the HAT: the gate only turns on when the Pi asks *and* the power-fail comparator is not tripped (hardware AND, not only software).
+5. **Gate soft-start** (controlled turn-on into the servos' bulk capacitance, to keep inrush below the BMS 8 A overcurrent trip).
+6. **TVS on the switched rail** (clamps the inductive kick when the switch opens under ~25 A).
+7. **No back-power through an idle-high TX line.** The STS bus TX idles high; with the servos unpowered it must not feed them through their signal pins. Either buffer the bus on the switched rail, or use a series R and drive TX low when the switch is off.
+
+Status: requirements only; the parts are chosen at schematic time (Woz). Atlas owns items 3 and 7 in software (pin defaults, TX low when off).
+
+**Protection_Current (addr 28) backstop: 1.4 A** (Chief 09:44). No objection: 1.4 A is above the 1.0 A clamp with margin for the 8.4 V full-pack case before the per-tick rescale catches up (duty 0.405 at 8.4 V gives ~1.14 A stall), and well below the STS3215 7.4 V stall (~2.4 A est.). My earlier 1.2 A was too close to 1.14 A. ≈ 215 counts if the 6.5 mA/LSB unit is right (bench-confirm).
+
 ## Line 9 / line 10 parts as priced (Woz 2026-11-23 09:55)
 
 - **TPS56637 stage** (TI SLVSEG1A Table 4, 5 V row; LCSC qty-1 prices): TPS56637RPAR C841386, L Vishay IHLP3232DZER3R3M11 3.3 µH C511015 (14 mΩ, Isat 9.7 A; TI's own reference inductor), 2 × 22 µF 25 V X7R 1210 GRM32ER71E226KE15L C21397 out + 1 in, 100 nF VIN + BOOT, R6 75 k / R7 10 k 0.1 % (C723587 / C95204) → 0.6 × (1 + 75/10) = **5.10 V** exact. Total **€4.70**.

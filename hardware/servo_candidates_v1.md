@@ -12,8 +12,8 @@ in FEETECH's selector data (20 models). The near-miss is **STS3046 (ST-3046-C001
 The 12 V parts (STS3250, STS3235, ST-3025) only reach ~3 Nm or less on 2S (est.).
 Everything stronger at 7.4 V (STS3095) is 195 g and 65 mm long.
 
-Decision needed (Atlas / Quack Chief): (A) accept STS3046 with criterion 1 relaxed to 3.9 Nm, gated by Hinton;
-or (B) go 3S for STS3250, which reopens the power sign-off and can't share a bus with STS3215-C001 (6–7.4 V).
+Decision needed (Atlas / Quack Chief): (S1) accept STS3046 with criterion 1 relaxed to 3.9 Nm, gated by Hinton;
+or (S2) go 3S for STS3250, which reopens the power sign-off and can't share a bus with STS3215-C001 (6–7.4 V).
 
 ## Screen against Atlas's criteria
 
@@ -170,3 +170,29 @@ Option B (Naoufel 2026-11-22 22:32) = **STS3046 (ST-3046-C001)** on 2 knees, 2 h
 - **Clamp register plan** (EEPROM 16 = 357, SRAM 48 rescaled every tick, Protection_Current 28 backstop): **still waiting for Atlas's ack.** Torque-arm bench at 6.3 / 7.4 / 8.4 V is needed before signing.
 - **ω_c ≈ 2.0 rad/s** is the only speed-cap figure. The earlier 2.17 rad/s is withdrawn in 26f2173, so the Chief/Woz mismatch is closed.
 - **Option B (line 23)** is still PROPOSED. The STS3046 unit price was not re-read today.
+
+## Chief 09:44 questions: STS3046 speed rating and price (Woz 2026-11-23 10:15)
+
+Labels: the doc's earlier decision labels are now **(S1) STS3046 on 2S** and **(S2) STS3250 on 3S**, so they no longer collide with Naoufel's "option B" (stronger knee/hip-pitch servos, no retrain).
+
+**At what voltage is 0.22 s/60° rated? 7.4 V.** FEETECH's own table, mirrored on the [FEETECH wiki ST-3046-C001 page](https://ftservo.github.io/ftservo-wiki/en/products/models/st-3046-c001/main/) ("FEETECH official product page, checked 2026-10-02"): *No load speed 0.22 sec/60° @7.4V*, 300 mA no-load @7.4 V, 40 kg·cm stall @7.4 V, 3.1 A stall @7.4 V, operating range 6–7.4 V (the attached PDF says 4–8.4 V; FEETECH flags the conflict). [ZennixTek](https://www.zennixtek.com/products/feetech-sts3046-servo-motor) repeats 0.22 s/60° @7.4 V.
+- 60°/0.22 s = **4.76 rad/s at 7.4 V**, which is the top of its rated range. Hinton's 4.76 rad/s is the right datasheet figure.
+- STS3215-C001 at 7.4 V, 5.43 rad/s, is itself an **estimate** (0.238 s/60° @6 V datasheet, scaled linearly to 7.4 V). On the same basis the STS3046 is ~12 % slower at 7.4 V and, scaled down to 6.6 V, ~4.2 rad/s (est.).
+- So the STS3046 trades speed for torque. If every Hinton torque–speed run fails the speed bar, **the STS3046 does not meet option B as stated (no retrain)** and I would not lock it. No other 2S FEETECH STS part in the screen above is both stronger and as fast. The 12 V parts need 3S (S2), which reopens the power sign-off. Decision: Chief/Naoufel, with Hinton's runs as the gate.
+
+**Price** (qty-1 retail, USD, ex shipping/VAT/tariff, read 2026-11-23 from the stores' Shopify product JSON; USD→EUR at 1.07 as elsewhere in this file):
+
+| Source | STS3046 unit | EUR |
+|---|---|---|
+| [ZennixTek](https://www.zennixtek.com/products/feetech-sts3046-servo-motor) | US$90.00 | €84.11 |
+| [AIFITLAB](https://aifitlab.com/products/feetech-sts3046-servo-motor) / [Robotopian](https://robotopian.com/products/feetech-sts3046-servo-motor) | US$95.00 | €88.79 |
+| Alibaba "180-day lowest" (earlier read, not re-read today: page returned empty) | ~US$63–65 | ~€59–61 |
+
+| Set (unit €84.11, ZennixTek) | Servos | Servos € | Idler bearings (F693ZZ 3×8×4, 1 per joint + 1 spare) | Brackets (printed, new STLs) | STS3215 removed from line 2 (€14 each) | Net delta |
+|---|---|---|---|---|---|---|
+| ×4 (knee + hip pitch) + 1 spare | 5 | €420.55 | 5 pcs, **not priced** (listings found, no price captured) | new design, filament only, **not priced** | −4 → −€56 | **+€364.55** + bearings + brackets |
+| ×6 (+ ankles) + 1 spare | 7 | €588.77 | 7 pcs, **not priced** | new design, **not priced** | −6 → −€84 | **+€504.77** + bearings + brackets |
+
+At the Alibaba price (~€60) the deltas would be ~+€244 (×4+1) and ~+€336 (×6+1). The earlier "+€46/servo" row above used the Alibaba price and no spare. Bearings are a small cost in any case; the real cost of brackets is CAD time (new body 40×20×43.05 mm, single shaft, back-side idler), owner Woz, after Chief/Naoufel decide.
+
+**Joint count is not settled.** Naoufel said knee + hip pitch (4); Hinton ran 6 (incl. ankles); my recommendation was 6 because the ankles saturate too. Chief/Naoufel decide.
