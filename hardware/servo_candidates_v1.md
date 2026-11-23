@@ -113,3 +113,17 @@ Every servo housing (WJ-WK00-0122/0123/0124 case parts = STS3215 case) appears a
 | foot_assembly | 75.2 | none | foot PLA/TPU parts |
 
 Trunk (698.5 g) holds 2 hip-yaw + neck-pitch servos. Model total 2.0615 kg. Conclusion: an STS3046 swap is +34 g per servo (replace), not +89 g; COM/inertia of the thigh, shin and roll_to_pitch links also change (different body shape).
+
+## Continuous (rated) torque at 7.4 V (Woz, 2026-11-23 01:45 Paris)
+
+| Model | FEETECH rated torque | At 7.4 V |
+|---|---|---|
+| STS3215-C001 | 6.5 kg·cm @6 V = 0.64 Nm | ~0.79 Nm *est.* |
+| STS3046 (ST-3046-C001) | 13.3 kg·cm @7.4 V = **1.30 Nm** | 1.30 Nm (datasheet) |
+| STS3250 (ST-3250-C001) | 16 kg·cm @12 V = 1.57 Nm | ~0.97 Nm *est.* |
+| STS3095 (ST-3095-C001) | 35 kg·cm @8.4 V = 3.43 Nm | ~3.0 Nm *est.* |
+
+The 1.30 Nm figure is FEETECH's own rated torque for ST-3046-C001 at 7.4 V (wiki model table), 13.3 × 0.0981.
+FEETECH does not state a duty cycle for "rated", so these count as continuous only until a case-temperature
+bench log confirms them. Hinton's reference walk (1.60 / 1.76 Nm knee RMS, sim, 5.2 Nm actuator cap) is above
+every candidate except STS3095.
