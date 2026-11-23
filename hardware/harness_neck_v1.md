@@ -17,7 +17,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 
 - **Pi pair.** Only the PI pair feeds the LTC3226, and only the Pi and camera are held up.
 - **Aux pair.** The SG90s and the amp tolerate sag and are never on the backup rail.
-- **Power-fail trip (PFI).** Sensed on the HAT. 4.70 V nominal with a 0.1% divider (trips 4.60–4.80 V); regulator setpoint 5.15 V so the HAT always sits ≥ 5.03 V, above the worst release (4.88 V). See BOM line 10 for the tolerance stack.
+- **Power-fail trip (PFI).** Sensed on the HAT. 4.70 V nominal with a 0.1% divider (trips 4.60–4.80 V); regulator setpoint 5.10 V (DECIDED, Quack Chief 02:26; the 5.15 V in a967d62 is withdrawn because its 5.23 V no-load corner breaks Atlas's ≤ 5.16 V cap). With ±1% reference and 0.1% feedback resistors the output is 5.04–5.16 V, so the HAT sits ≥ 4.99 V after the 0.045 V Pi-pair drop, above the worst PFI release (4.88 V). See BOM line 10 for the tolerance stack.
 - **Ground returns (Atlas condition 1).** Each pair has its own GND conductor. PI GND and AUX GND join only at the regulator output in the trunk, never in the head. The STS bus GND joins at the battery/BMS negative.
 - **Amp supply (Atlas condition 2).** The MAX98357A VIN and GND are wired ONLY to the AUX pair. It is never connected to the HAT 5 V or the LTC3226 output. Its I²S and SD_MODE inputs get 100 Ω series resistors so an unpowered amp is not fed from Pi GPIO.
 - **Audio signals stay in the head.** BCLK GPIO18, LRCLK GPIO19, mic DATA GPIO20, amp DIN GPIO21, SD_MODE GPIO4 are short head-internal runs; none cross the neck.
@@ -42,3 +42,39 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 - Flex the head through its full yaw range for 1,000 cycles. Pass: no conductor break and no insulation wear.
 - **Audio + stall rail test (Atlas condition 4).** Both SG90s stalled and full-scale audio (0 dBFS, max_volume cap bypassed) for 60 s. Scope 5V_PI at the Pi pins referenced to the Pi GND pin. Pass: ≥ 4.63 V min, PFO never asserts, no audible dropout. Repeat with the camera streaming.
 - **PF mute.** On PFO, SD_MODE (GPIO4) goes low first in the handler; scope SD_MODE vs PFO, pass ≤ 50 µs.
+
+## 5 V regulator: TPS56637 @ 5.10 V on the trunk board (DECIDED 2026-11-23 02:26)
+
+Proposed by Woz, signed off by Atlas 02:24, decided by Quack Chief 02:26. The Pololu D36V50F5 is bring-up only; the policy never runs on it. Atlas's conditions:
+
+1. **Feedback divider 0.1%.** Output 5.10 V nominal, 5.04–5.16 V over ±1% reference + 0.1% resistors. Max 5.16 V at no load, under the Pi's 5.25 V.
+2. **FCCM, not Eco-mode.** Set by the MODE pin strap; the strap value comes from the TI datasheet table at schematic time and is a layout-review checkpoint.
+3. **Low-voltage cutoff on LOADED pack voltage:** pack ≥ 6.3 V during stand-up and walk (regulator dropout ≈ 5.8 V cold, ≈ 5.9 V hot, to be measured). See "Pack resistance and the stand-up block" below.
+4. **Bench (3 boards):**
+   - 30 min at 4.9 A, Vin 6.0 / 7.4 / 8.4 V, 35 °C ambient: case ≤ 100 °C, no foldback or hiccup.
+   - Efficiency at 1 / 3 / 4.9 A; expect ≥ 88% at 7.4 V.
+   - Dropout sweep: regulation holds down to ≤ 5.9 V in, hot.
+   - Load step 0.5 → 4.9 A while Vin steps 8.4 → 6.3 V: HAT rail > 4.78 V, no PFI trip.
+   - Ripple < 50 mV p-p measured at the HAT (tip-and-barrel probe).
+   - BNO055 UART errors = 0 at full load.
+
+## Pack resistance and the stand-up block
+
+Shared path from cells to the regulator tap (the regulator feed is starred at the BMS output, so servo-wire drop downstream of the star is excluded):
+
+| Element | Nominal | Worst (cold / low SoC / aged) | Source |
+|---|---|---|---|
+| 2× Molicel P30B cell DCIR | 2 × 17 = 34 mΩ | 2 × 22 = 44 mΩ | 17 mΩ DCIR (Molicel P30B sheet, Cell Saviors entry); 22 mΩ is a Woz derate, not a datasheet figure |
+| Cell interconnect (nickel / busbar) | 2 mΩ | 2 mΩ | Woz estimate |
+| BMS discharge FETs | 4 mΩ | 6 mΩ | Woz estimate; depends on the BMS chosen |
+| Main switch + pack connector | 3 mΩ | 5 mΩ | Woz estimate |
+| Shared 16 AWG, ~0.2 m round trip | 3 mΩ | 3 mΩ | 13.2 mΩ/m |
+| **Total** | **≈ 46 mΩ** | **≈ 60 mΩ** | |
+
+At the 23.9 A clamped stand-up worst case:
+- Sag = 1.10 V nominal, 1.43 V worst.
+- From a 7.2 V rest pack: 6.10 V nominal, 5.77 V worst. Both are below the 6.3 V loaded floor; the worst case is at the regulator's cold dropout.
+- **So the 7.2 V rest block must rise.** Required rest voltage = 6.3 V + 23.9 A × R: 7.40 V nominal, 7.73 V worst.
+- **Provisional stand-up block: 7.6 V at rest (3.8 V/cell).** Final value per unit = 6.3 V + 23.9 A × R_measured + 0.1 V, with R_measured from a bench step (1 A → 20 A, 1 s, at the BMS output) on every pack.
+- The hard guard stays the loaded check: abort stand-up / sit down if the pack is < 6.3 V for > 50 ms (filtered so single PWM edges don't trip it).
+- Walking draws less than stand-up, so walking may continue below 7.6 V rest while the loaded check holds. power.low_battery (Luxo / Page / Atlas) = **7.6 V rest, provisional**, until bench R is in.

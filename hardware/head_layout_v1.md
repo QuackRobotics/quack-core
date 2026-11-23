@@ -77,7 +77,7 @@ All cases are inside the 366–447 g training range and under the 5 mm CoM-shift
   - +x side: the shell top is 0–5 mm away (median 5.0 mm). No room, as expected.
   - −x side: the only part under the Pi footprint is `head_bot_sheet`, 44.3 mm away (inner face x ≈ −16.3). No servo case, roll mount, camera or SG90 is in that column.
   - Stack: HAT PCB at x ≈ 17…18.5 (11.5 mm header spacing), 2× BCAP0010 (Ø10) under it to x ≈ 7. That leaves ≈ 23 mm to the bottom sheet. The camera board (y ±12.5) is ≥ 19 mm away sideways.
-  - Revised HAT + caps CoM ≈ (17, 47, 6) mm (was 22, 47, 6). With the camera: ≈ 434.6 g, CoM ≈ (8.3, −1.7, 20.4) mm, a ≈ 2.2 mm shift, mostly +y because the Pi sits off-centre.
+  - Revised HAT + caps CoM ≈ (17, 47, 6) mm (was 22, 47, 6). With the camera: ≈ 434.6 g, CoM ≈ (8.3, −1.7, 20.4) mm. CORRECTION 2026-11-23 02:40: the shift from Playground's head CoM (8.15, −3.91, 22.77) is (+0.15, +2.21, −2.37) mm = **3.2 mm**, not 2.2 mm; 2.2 mm was only the +y component.
   - Speaker vs HAT: checked below (Audio). Audio is IN for v1 (Naoufel 02:18).
 
 ## Audio: speaker + MAX98357A (BOM line 21, IN)
@@ -106,3 +106,11 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 ## Head mass with audio + mic (Woz est., nothing weighed)
 
 - Option C, camera net +10, HAT + caps at (17, 47, 6), + amp 2 g + mic 2 g: **≈ 438.6 g, CoM ≈ (8.22, −1.79, 20.07) mm, 3.4 mm from Playground's CoM.** Inside 366–447 g and under 5 mm. Over the < 20 g rule, so Hinton's regression stands.
+
+## Frame and origin for every head CoM in this file
+
+- **Frame:** MuJoCo body `head_assembly` in upstream `open_duck_mini_v2/robot.xml` (same body as Playground's `head_assembly`; Luxo's transform x_h = z_print − 129.06, y_h = y_print, z_h = 60.95 − x_print). Not the trunk frame.
+- **Origin:** the `head_roll` joint point (joint pos 0 0 0 in that body). The roll axis is the body's +z.
+- **Shift reference:** every "CoM shift" is the 3-D distance from Playground's head_assembly CoM (8.15, −3.91, 22.77) mm at 406.6 g.
+  - Camera + HAT: 434.6 g, (8.3, −1.7, 20.4), shift 3.2 mm.
+  - Camera + HAT + amp + mic: 438.6 g, (8.22, −1.79, 20.07), shift 3.4 mm.
