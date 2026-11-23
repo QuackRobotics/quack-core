@@ -13,8 +13,11 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 | I²C (BNO055) | SDA+GND, SCL+GND twisted; 3V3 | 26–28 AWG | ~12 mA | n/a |
 | Foot contacts | GPIO22, GPIO27, GND | 26–28 AWG | µA | n/a; 1 kΩ + 100 nF at the Pi |
 | STS bus to head servos | V_pack, GND, DATA | per upstream | head servos | n/a |
+| Servo-switch gate (added 2026-11-23) | SW_EN (Pi e-stop GPIO, head) to trunk-board switch gate; pull-down to OFF on the trunk side | 26–28 AWG | µA | n/a; broken wire = servos off |
 | USB, Pi to Waveshare adapter | upstream 50 cm micro-USB to USB-C | — | data | — |
 
+- **Neck conductor count (after SW_EN).** 16 conductors + the USB cable, up from 15 under the two-pair split (PI + AUX). Power 4 (PI pair, AUX pair), signals 9 (I²C SDA, SCL, 2 twist GNDs, 3V3; foot GPIO22, GPIO27, foot GND; SW_EN), STS bus 3 (stock Feetech daisy-chain lead, not in the harness connector). If the BNO055 moves to UART mode, the I²C group becomes TX/RX/GND + 3V3: 1 fewer.
+- **Neck connectors (proposed, ratings to confirm at schematic).** Power: Molex Micro-Fit 3.0, 2×2 (4 pos), one circuit per pin; per-pin load ≤ 2.76 A. Signals: JST-GH 10-pin (9 used + 1 spare). Both keyed, with strain relief on the trunk side of the neck pitch joint.
 - **Pi pair.** Only the PI pair feeds the LTC3226, and only the Pi and camera are held up.
 - **Aux pair.** The SG90s and the amp tolerate sag and are never on the backup rail.
 - **Power-fail trip (PFI).** Sensed on the HAT. 4.70 V nominal with a 0.1% divider (trips 4.60–4.80 V); regulator setpoint 5.10 V (DECIDED, Quack Chief 02:26; the 5.15 V in a967d62 is withdrawn because its 5.23 V no-load corner breaks Atlas's ≤ 5.16 V cap). With ±1% reference and 0.1% feedback resistors the output is 5.04–5.16 V, so the HAT sits ≥ 4.99 V after the 0.045 V Pi-pair drop, above the worst PFI release (4.88 V). See BOM line 10 for the tolerance stack.
@@ -41,6 +44,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 - Measure 5V_PI at the HAT under a 2.16 A load with the AUX pair loaded at 2.76 A. Pass: ≥ 4.75 V.
 - Flex the head through its full yaw range for 1,000 cycles. Pass: no conductor break and no insulation wear.
 - **Audio + stall rail test (Atlas condition 4).** Both SG90s stalled and full-scale audio (0 dBFS, max_volume cap bypassed) for 60 s. Scope 5V_PI at the Pi pins referenced to the Pi GND pin. Pass: ≥ 4.63 V min, PFO never asserts, no audible dropout. Repeat with the camera streaming.
+- **No back-feed into 5V_AUX during hold-up (Chief 09:11).** 5V_AUX splits from 5V_PI at the TPS56637 output in the trunk, upstream of the LTC3226. The only path from the supercaps to 5V_AUX is LTC3226 VOUT/VCAP → VIN → PI pair → trunk junction → AUX pair. Reverse blocking of that path is NOT yet confirmed from the ADI datasheet. Test: trunk regulator off, 10 Ω on the AUX pair at the trunk, supercaps charged. Trigger PFI and scope 5V_AUX plus the current in the PI pair. Pass: 5V_AUX < 0.5 V within 10 ms, PI-pair reverse current < 1 mA, hold-up ≥ 0.53 s. If it fails: add an ideal-diode (reverse-blocking) stage on 5V_PI at the HAT input, ahead of the LTC3226 VIN, and recheck the 4.75 V rail margin.
 - **PF mute.** On PFO, SD_MODE (GPIO4) goes low first in the handler; scope SD_MODE vs PFO, pass ≤ 50 µs.
 
 ## 5 V regulator: TPS56637 @ 5.10 V on the trunk board (DECIDED 2026-11-23 02:26)

@@ -159,6 +159,7 @@ Source: FEETECH STS/SMS control table as used by LeRobot (`STS_SMS_SERIES_CONTRO
 2. Control loop rewrites SRAM Torque_Limit (48) each 20 ms tick: duty = 1.0 A × 3.0 Ω / V_pack (Present_Voltage, filtered), clamped to ≤ 1000, so the cap stays ≈ 1.0 A (≈ 0.88 Nm) at any pack voltage = Hinton's "clamp-kept".
 3. EEPROM Protection_Current (28) as a backstop trip **above** the clamp (≈ 1.4 A; unit is reported as 6.5 mA/LSB → ≈ 215, to be bench-confirmed), so a stuck SRAM write cannot reach the BMS trip.
 - Margin is 0.0007 m/s, i.e. none. A 3.0 Ω estimate that is 5 % off moves the cap by 5 %. Bench: one STS3215 on the torque arm at 6.3 / 7.4 / 8.4 V, log Present_Current at each Torque_Limit value, before this is signed.
+- **Speed dependence of the clamped cap (corrected 2026-11-23).** Under a duty cap the cap falls with speed: τ ≈ 0.876 × (1 − ω/ω_c) Nm. ω_c ≈ **2.0 rad/s**: 1.99 if the 0.15 A no-load current is kept as a torque loss at both ends (5.78 × 3.0/7.4 × 0.85), or 2.02 with Chief's τ_cap/τ_stall × ω0 (0.88 × 5.43/2.36). That's a 1.5 % model difference. With the per-tick rescale ω_c is independent of V_pack. The 2.17 rad/s in an earlier Woz message is withdrawn: it was 0.40 × 5.43 and ignored the no-load current.
 
 ## Option B servo (6 joints)
 
