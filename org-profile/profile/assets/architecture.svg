@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Micro Duck system architecture">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/>
+    </marker>
+    <style>
+      .box { fill: #f1f5f9; stroke: #334155; stroke-width: 2; }
+      .title { font: 600 15px system-ui, sans-serif; fill: #0f172a; }
+      .sub { font: 400 12px system-ui, sans-serif; fill: #475569; }
+      .lane { font: 600 13px system-ui, sans-serif; fill: #64748b; }
+      @media (prefers-color-scheme: dark) {
+        .box { fill: #1e293b; stroke: #94a3b8; }
+        .title { fill: #f8fafc; }
+        .sub { fill: #cbd5e1; }
+        .lane { fill: #94a3b8; }
+      }
+    </style>
+  </defs>
+  <rect width="900" height="520" fill="none"/>
+  <text x="24" y="36" class="lane">PHYSICAL</text>
+  <text x="340" y="36" class="lane">EDGE / CLOUD</text>
+  <text x="660" y="36" class="lane">TRAINING &amp; SIM</text>
+  <rect class="box" x="24" y="52" width="200" height="72" rx="10"/>
+  <text x="40" y="82" class="title">quack-hardware</text>
+  <text x="40" y="102" class="sub">PCBA · CAD · BOM</text>
+  <rect class="box" x="24" y="156" width="200" height="72" rx="10"/>
+  <text x="40" y="186" class="title">quack-firmware</text>
+  <text x="40" y="206" class="sub">Radxa · servos (Rust)</text>
+  <rect class="box" x="320" y="104" width="200" height="72" rx="10"/>
+  <text x="336" y="134" class="title">quack-api</text>
+  <text x="336" y="154" class="sub">axum + tonic</text>
+  <rect class="box" x="320" y="224" width="200" height="72" rx="10"/>
+  <text x="336" y="254" class="title">quack-dashboard</text>
+  <text x="336" y="274" class="sub">Three.js UI</text>
+  <rect class="box" x="640" y="72" width="220" height="72" rx="10"/>
+  <text x="656" y="102" class="title">quack-sim</text>
+  <text x="656" y="122" class="sub">MuJoCo MJCF assets</text>
+  <rect class="box" x="640" y="188" width="220" height="72" rx="10"/>
+  <text x="656" y="218" class="title">quack-ml</text>
+  <text x="656" y="238" class="sub">Isaac Lab · ONNX</text>
+  <rect class="box" x="320" y="360" width="260" height="64" rx="10" stroke-dasharray="6 4"/>
+  <text x="336" y="390" class="title">quack-core</text>
+  <text x="336" y="410" class="sub">Governance · docs · CI/CD</text>
+  <g stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#arrow)">
+    <path d="M 124 124 V 156"/>
+    <path d="M 224 192 H 320"/>
+    <path d="M 420 176 V 224"/>
+    <path d="M 640 108 H 540"/>
+    <path d="M 750 144 V 188"/>
+    <path d="M 750 224 L 224 210"/>
+    <path d="M 750 108 L 224 175" stroke-dasharray="5 4"/>
+  </g>
+  <text x="230" y="178" class="sub" font-size="11">control / telemetry</text>
+  <text x="560" y="100" class="sub" font-size="11">sim validation</text>
+  <text x="480" y="210" class="sub" font-size="11">policies (ONNX)</text>
+</svg>
