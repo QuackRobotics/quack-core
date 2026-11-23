@@ -126,7 +126,9 @@ On PFO (GPIO6) the handler executes **torque off within one 20 ms control tick**
 | STS leg + neck servos (STS3215, STS3046 on the 6 option-B joints if adopted) | 14 | Pack direct (2S, 6.0–8.4 V) via the servo-power switch | **No** | bus torque-disable + switch open |
 | SG90 antennas (GPIO12/13 PWM) | 2 | 5V_AUX neck pair from the trunk TPS56637 (SG90 is a 4.8–6 V part, cannot sit on the pack) | **No** — 5V_AUX never touches the HAT backup rail | PWM stopped on GPIO12/13; 5V_AUX also collapses with the regulator |
 
-So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands. Not all 16 are behind the servo switch: the 2 SG90 are on 5V_AUX, and that is deliberate.
+So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands.
+
+**SG90 PWM series resistors (Woz 2026-11-23 10:25).** Fit **1 kΩ in series on GPIO12 and GPIO13**, at the HAT. This follows the same logic as the amp's 100 Ω. If 5V_AUX is down while a GPIO is high, the SG90 signal input could back-feed its own unpowered rail through its input protection. The 1 kΩ caps that at ≤ (3.3 − ~0.6 V diode) / 1 kΩ ≈ 2.7 mA per pin (Woz estimate), which is within a Pi GPIO's drive. The SG90 input current at 3.3 V is **not published** (I found no datasheet figure). The input is a logic-level PWM receiver, so 1 kΩ should not change the edges at 50 Hz. Bench check: scope the pulse at the servo with 1 kΩ fitted and confirm the servo tracks. The SG90s are **not** cut by the servo switch: on PFI they are stopped by driving PWM low, and 5V_AUX dies with the regulator when the pack goes. Not all 16 are behind the servo switch: the 2 SG90 are on 5V_AUX, and that is deliberate.
 
 **Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: ≥ 40 A, ≤ 5 mΩ, with gate pulled to OFF by default so a broken neck wire = servos off.
 
