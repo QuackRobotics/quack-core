@@ -134,7 +134,7 @@ So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands.
 
 **Firmware rule, 5V_AUX off (owner: Atlas; Chief 09:52).** Whenever 5V_AUX is off or unknown (boot before the regulator is up, safe stop, PFO latch, e-stop, brown-out, shutdown), GPIO12 and GPIO13 are driven LOW or set as inputs (no pull-up), never left high and never pulsing. Back-feed into the SG90 is then ~0. Boot default: inputs until the 5 V rail is confirmed. This covers the power-fail safe stop (step 2 above) and also every other path that drops 5V_AUX.
 
-**Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: ≥ 40 A, ≤ 5 mΩ, with gate pulled to OFF by default so a broken neck wire = servos off.
+**Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: package ID ≥ 80 A, RDS(on) ≤ 2.5 mΩ at the 6.0 V-pack gate drive, SOA 42.5 A / 1 s (raised 2026-11-23 from ≥ 40 A / ≤ 5 mΩ, which had 2 % margin on the 39.2 A all-stall; see "Trunk power sizing for 39 A"), with gate pulled to OFF by default so a broken neck wire = servos off.
 
 ### Servo-power switch on the trunk board: Atlas's 7 conditions (APPROVED by Quack Chief 2026-11-23 09:44)
 
@@ -144,13 +144,43 @@ The switch moves from the HAT to the trunk board. It is approved only with all s
 2. **Gate off on an open wire.** A broken SW_EN conductor turns the servos off (pull-down to OFF on the trunk side). **SW_EN continuity is part of the neck flex test** (the 1,000-cycle yaw test above).
 3. Driven from a **Pi GPIO with a boot pull-down, active-high**, so the servos stay off through boot and reset.
 4. **SW_EN AND LTC3226 PFO** on the HAT: the gate only turns on when the Pi asks *and* the power-fail comparator is not tripped (hardware AND, not only software).
-5. **Gate soft-start** (controlled turn-on into the servos' bulk capacitance, to keep inrush below the BMS 8 A overcurrent trip).
+5. **Gate soft-start** (controlled turn-on into the servos' bulk capacitance, to keep inrush well below the BMS overcurrent trip: 28 A nominal / 25.2 A low corner per line 8; the earlier "8 A" was stale).
 6. **TVS on the switched rail** (clamps the inductive kick when the switch opens under ~25 A).
 7. **No back-power through an idle-high TX line.** The STS bus TX idles high; with the servos unpowered it must not feed them through their signal pins. Either buffer the bus on the switched rail, or use a series R and drive TX low when the switch is off.
 
 Status: requirements only; the parts are chosen at schematic time (Woz). Atlas owns items 3 and 7 in software (pin defaults, TX low when off).
 
 **Protection_Current (addr 28) backstop: 1.4 A** (Chief 09:44). No objection: 1.4 A is above the 1.0 A clamp with margin for the 8.4 V full-pack case before the per-tick rescale catches up (duty 0.405 at 8.4 V gives ~1.14 A stall), and well below the STS3215 7.4 V stall (~2.4 A est.). My earlier 1.2 A was too close to 1.14 A. ≈ 215 counts if the 6.5 mA/LSB unit is right (bench-confirm).
+
+## Trunk power sizing for 39 A (Woz 2026-11-23 10:40 Paris, Chief ask)
+
+**Design current.** 14 STS servos all stalled at the 8.4 V full pack, unclamped: 14 × 2.8 A = **39.2 A** on the switched servo rail (2.8 A = FEETECH 2.0 A @ 6 V scaled to 8.4 V, i.e. ≈ 3.0 Ω per stalled servo; Woz estimate, not measured). Upstream of the 5 V tap (pack, fuse, BMS, pack connector) add the TPS56637 input at 8.4 V: 4.9 A × 5.1 V / 0.913 / 8.4 V = 3.26 A → **42.5 A**.
+
+This is a fault bound, not an operating point:
+- It is an ideal-source figure. With the shared pack path in series (46 mΩ nominal / 60 mΩ worst, table above), 14 × 3.0 Ω stalled draws only **32.3 A / 30.6 A** (Woz calc).
+- It cannot persist: the BMS OCD trip is 28 A nominal ±10 % (25.2–30.8 A, line 8), and the 4 hip yaw/roll servos are clamped at 1.0 A (clamped stand-up worst case 23.9 A).
+- So the sizing rule below is: **continuous rating ≥ 30.8 A** (the BMS upper trip corner) and **short-time rating ≥ 42.5 A for the BMS OCD delay**. The delay value isn't known until the BMS is chosen; assume ≤ 1 s and bench it.
+
+| Element | Choice | Rating (source) | Margin |
+|---|---|---|---|
+| Servo-power switch (trunk board, high-side) | **Spec raised from "≥ 40 A, ≤ 5 mΩ" to: package ID ≥ 80 A, RDS(on) ≤ 2.5 mΩ at the gate drive actually available from a 6.0 V pack, VDS ≥ 20 V, SOA covering 42.5 A for 1 s.** Two FETs in parallel allowed. Part chosen at schematic. | — | 40 A vs 39.2 A was **2 % (0.8 A)**, i.e. none, and MOSFET ID figures are at Tc 25 °C. At 2.5 mΩ: 3.8 W at 39.2 A (transient), 2.4 W at 30.8 A, 1.4 W at the 23.9 A stand-up (Woz calc). |
+| Pack + / − leads, BMS → fuse → 5 V star → switch | **12 AWG silicone** (was 16 AWG on the shared run) | 41 A chassis, 5.21 mΩ/m ([PowerStream AWG table](https://www.powerstream.com/Wire_Size.htm)) | 30.8 A continuous = 0.75 of rating; 42.5 A transient = 1.04 × chassis for ≤ 1 s, acceptable for a 0.2 m run in air. 16 AWG is 22 A chassis, so it **fails** even the 23.9 A stand-up on the chassis rule. |
+| Switch → per-leg hub (2 legs × 5 servos) and neck hub (4) | **16 AWG silicone** | 22 A chassis (PowerStream) | leg at all-stall 5 × 2.8 = 14 A = 0.64 of rating |
+| Hub → servo | stock Feetech 3-pin lead, **one servo per hub port (star); data stays daisy-chained through the hub** | Molex Mini-SPOX (5264) 3 A per contact ([keszoox guide](https://keszoox.com/blogs/news/molex-mini-spox-connector-guide); Molex spec PDF not opened); stock lead wire gauge not published | 2.8 A vs 3 A = **7 %**, thin. Bench: 2.8 A for 60 s through one stock lead + connector, ΔT ≤ 30 K. |
+| Pack connector | **XT60 (Amass)**, replaces the upstream XT30 (line 11) | 30 A continuous / 60 A intermittent ([TME XT60-M](https://www.tme.com/us/en-us/details/xt60-m/dc-power-connectors/amass/), [electrokit](https://www.electrokit.com/en/stromkontakt-2-pol-xt60-30a-hona)) | 23.9 A stand-up = 0.80 of continuous; 42.5 A transient = 0.71 of intermittent. XT30 rating not verified from Amass; not used on the pack. |
+| Fuse (pack +, at the cells, ahead of the BMS) | **Littelfuse 0456040.DR** (NANO2 456, 40 A, 60 V, SMD on trunk board) | 40 A / 60 V ([DigiKey 0456040.DR](https://www.digikey.com/en/products/detail/littelfuse-inc/0456040-DR/2080264)); ~1.05 mΩ (Mouser listing snippet) | Role: backup if a BMS FET fails short (cell-level short ≈ 8.4 V / ~50 mΩ ≈ 170 A, Woz calc). It must NOT open on 42.5 A for 1 s or on repeated 23.9 A stand-ups. **The time-current curve and breaking capacity are not read yet** (the Littelfuse page returned 403); check both at schematic. |
+
+**Daisy-chain flag (new).** Stock Feetech power is daisy-chained from servo to servo. On a 5-servo leg the first hop would carry the whole leg on a 3 A contact: 14 A at all-stall, and already about 10 A at a normal stand-up (Woz estimate). That's why the star hubs are above. They need Atlas's ack (routing, cable lengths).
+
+**Waveshare bus adapter (line 12) is out of the power path.** Its page lists only a 5.5 × 2.1 mm DC jack and screw terminal for 9–12.6 V input, with no current rating ([Waveshare](https://www.waveshare.com/bus-servo-adapter-a.htm)). Use it for UART data only. Servo power goes trunk switch → hubs.
+
+**Upstream "small power switch" (line 11, amazon.fr B0CH3JCQM5).** Its rating isn't checked. A small rocker can't sit in series with a 42.5 A path, so it stays only as a low-current control input (e.g. to a trunk-board main FET gate). Decide at schematic.
+
+**Shared-path R.** 12 AWG instead of 16 AWG drops the 0.2 m run from 2.6 to 1.0 mΩ (≈ −1.6 mΩ), and the NANO2 adds ≈ +1.05 mΩ. Net ≈ −0.6 mΩ, so the 46 / 60 mΩ table and the 7.85 V gate stay as they are.
+
+**Mass / cost delta (estimates).** 12 AWG copper +3.6 g (calc), with insulation ≈ +5 g; XT60 vs XT30 pair ≈ +3 g; 3 hub boards on the JLC panel ≈ +6 g. Total ≈ **+14 g in the trunk and ≈ +€5**. BOM line 25 is PROPOSED and not in TOTAL.
+
+**Stale text fixed.** Atlas condition 5 said "BMS 8 A overcurrent trip". The trip is 28 A nominal (line 8). Soft-start is sized to keep inrush well below the 25.2 A low corner.
 
 ## Distributor check, list only, NOTHING ordered (Woz 2026-11-23 10:08 Paris)
 
