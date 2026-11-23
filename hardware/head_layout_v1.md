@@ -78,5 +78,31 @@ All cases are inside the 366–447 g training range and under the 5 mm CoM-shift
   - −x side: the only part under the Pi footprint is `head_bot_sheet`, 44.3 mm away (inner face x ≈ −16.3). No servo case, roll mount, camera or SG90 is in that column.
   - Stack: HAT PCB at x ≈ 17…18.5 (11.5 mm header spacing), 2× BCAP0010 (Ø10) under it to x ≈ 7. That leaves ≈ 23 mm to the bottom sheet. The camera board (y ±12.5) is ≥ 19 mm away sideways.
   - Revised HAT + caps CoM ≈ (17, 47, 6) mm (was 22, 47, 6). With the camera: ≈ 434.6 g, CoM ≈ (8.3, −1.7, 20.4) mm, a ≈ 2.2 mm shift, mostly +y because the Pi sits off-centre.
-  - Not checked: the speaker (`full_speaker`, `speaker_stand`) is not in robot.xml, so its position against the HAT needs Onshape or Luxo's CAD.
-- **If audio is cut.** The head loses `full_speaker` and its two mounts. Their mass is unknown and is inside the 406.6 g.
+  - Speaker vs HAT: checked below (Audio). Audio is IN for v1 (Naoufel 02:18).
+
+## Audio: speaker + MAX98357A (BOM line 21, IN)
+
+Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` and `print/speaker_interface.stl`. Like `head.stl`, they are exported in the assembly position, so Luxo's transform `head_assembly = (z_print − 129.06, y, 60.95 − x_print)` applies. Medium confidence: confirm in Onshape.
+
+| Part | Mass | Source | Centroid (mm, head frame) | Extent |
+|---|---|---|---|---|
+| Speaker ANGEEK 4 Ω 3 W, Ø40 × 20 mm, magnet Ø22 | ≤ 15 g budget | not published; weigh | ≈ on the interface, (6.5, −64, 20) | — |
+| `speaker_interface` (printed) | ≤ 2.2 g | STL volume 1.80 cm³ × 1.24 g/cm³ (solid upper bound) | (6.5, −64.1, 20.1) | x −12…25, y −75…−54, z 1…40 |
+| `speaker_stand` (printed) | ≤ 8.7 g | STL volume 6.99 cm³ × 1.24 | (18.2, −54.8, 17.9) | x −15…32, y −75…−29, z −8…43 |
+| MAX98357A breakout | ≈ 2 g | Woz est. | ≈ (10, −45, 25), next to the speaker | — |
+
+- The speaker and both printed parts are already in Playground's 406.6 g head (`full_speaker`, `speaker_interface`, `speaker_stand`). Only the amp is new mass.
+- **Clearances:** Pi + HAT at y +31.8…+63 (opposite side, > 60 mm). Camera board/bracket z ≤ −47 (> 38 mm). Projector LED at (24, 0, −59), reflector ≤ Ø20 (> 19 mm in y). No clash.
+- **GPIO:** BCLK GPIO18 (pin 12), LRCLK GPIO19 (pin 35), DIN GPIO21 (pin 40), SD_MODE GPIO4 (pin 7). No clash with GPIO12/13 (antenna PWM), 14/15 (BNO055 UART fallback), 22/27 (feet), 23–25 (LEDs, projector). PFO proposed on GPIO6 (pin 31).
+- **Page:** max_volume = −3 dBFS (≈1.6 W, 0.89 A peak). Budgets keep the 1.26 A full-scale peak.
+
+## Microphone (BOM line 22, PROPOSED)
+
+- Upstream mic = Adafruit 3421, SPH0645LM4H I²S MEMS, bottom port, 600 µA typ, 1.62–3.6 V (Knowles datasheet rev C). Powered from Pi 3.3 V.
+- Full duplex on one I²S block: shares BCLK GPIO18 + LRCLK GPIO19 with the amp; mic DATA → GPIO20 (pin 38); SEL → GND.
+- Placement: front face, +y side, below the eye line, board centre ≈ (−10, +22, −56). Ø1.2 mm port through the front wall with a foam gasket. ≈ 117 mm from the speaker (opposite side), at the front, away from the rear SG90s and the neck servos. Between the camera board edge (y 12.5) and the eye hole. Breakout outline still to be checked against Adafruit CAD; Luxo to place the port cosmetically.
+- Mass ≈ 2 g (est.).
+
+## Head mass with audio + mic (Woz est., nothing weighed)
+
+- Option C, camera net +10, HAT + caps at (17, 47, 6), + amp 2 g + mic 2 g: **≈ 438.6 g, CoM ≈ (8.22, −1.79, 20.07) mm, 3.4 mm from Playground's CoM.** Inside 366–447 g and under 5 mm. Over the < 20 g rule, so Hinton's regression stands.
