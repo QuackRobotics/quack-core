@@ -127,3 +127,13 @@ The 1.30 Nm figure is FEETECH's own rated torque for ST-3046-C001 at 7.4 V (wiki
 FEETECH does not state a duty cycle for "rated", so these count as continuous only until a case-temperature
 bench log confirms them. Hinton's reference walk (1.60 / 1.76 Nm knee RMS, sim, 5.2 Nm actuator cap) is above
 every candidate except STS3095.
+
+## STS3215-C001 current–torque line (Woz 2026-11-23 02:45, for Hinton / stand-up current bound)
+
+FEETECH publishes **no current–torque curve** for the C001, only two points (FEETECH table, values at 6 V): no-load 150 mA, stall 2.0 A at 19.5 kg·cm (1.91 Nm). A brushed DC motor behind a fixed gearbox is linear in torque, so:
+
+- **6 V:** I = 0.15 A + 0.97 A/Nm × τ (output-shaft Kt ≈ 1.03 Nm/A; τ_stall 1.91 Nm).
+- **7.4 V (derived, not measured):** same slope; stall scales with voltage, ≈ 2.47 A at ≈ 2.36 Nm (resistance-limited). No-load current rises slightly with speed; keep 0.15–0.30 A as the band.
+- At our pinned rated 0.49 Nm: ≈ 0.63 A. At the 1.0 A EEPROM clamp: ≈ 0.88 Nm available.
+- Caveats: gear friction makes the real line slightly non-linear near no load; the firmware protection-current register can cap current below stall; temperature raises winding R (≈ +0.39 %/°C copper), lowering hot stall current.
+- **Bench to replace this:** one C001 on a torque arm at 7.4 V, 6 load points 0–stall, log bus present-current vs torque. Until then Hinton should treat this as a model.

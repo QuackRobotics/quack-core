@@ -87,14 +87,27 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 | Part | Mass | Source | Centroid (mm, head frame) | Extent |
 |---|---|---|---|---|
 | Speaker ANGEEK 4 Ω 3 W, Ø40 × 20 mm, magnet Ø22 | ≤ 15 g budget | not published; weigh | ≈ on the interface, (6.5, −64, 20) | — |
-| `speaker_interface` (printed) | ≤ 2.2 g | STL volume 1.80 cm³ × 1.24 g/cm³ (solid upper bound) | (6.5, −64.1, 20.1) | x −12…25, y −75…−54, z 1…40 |
-| `speaker_stand` (printed) | ≤ 8.7 g | STL volume 6.99 cm³ × 1.24 | (18.2, −54.8, 17.9) | x −15…32, y −75…−29, z −8…43 |
+| `speaker_interface` (printed) | ≤ 2.24 g | STL volume 1.804 cm³ × 1.24 g/cm³ (solid upper bound) | (6.5, −64.1, 20.1) | x −12…25, y −75…−54, z 1…40 |
+| `speaker_stand` (printed) | ≤ 8.66 g | STL volume 6.986 cm³ × 1.24 | (18.2, −54.8, 17.9) | x −15…32, y −75…−29, z −8…43 |
 | MAX98357A breakout | ≈ 2 g | Woz est. | ≈ (10, −45, 25), next to the speaker | — |
 
 - The speaker and both printed parts are already in Playground's 406.6 g head (`full_speaker`, `speaker_interface`, `speaker_stand`). Only the amp is new mass.
 - **Clearances:** Pi + HAT at y +31.8…+63 (opposite side, > 60 mm). Camera board/bracket z ≤ −47 (> 38 mm). Projector LED at (24, 0, −59), reflector ≤ Ø20 (> 19 mm in y). No clash.
 - **GPIO:** BCLK GPIO18 (pin 12), LRCLK GPIO19 (pin 35), DIN GPIO21 (pin 40), SD_MODE GPIO4 (pin 7). No clash with GPIO12/13 (antenna PWM), 14/15 (BNO055 UART fallback), 22/27 (feet), 23–25 (LEDs, projector). PFO proposed on GPIO6 (pin 31).
 - **Page:** max_volume = −3 dBFS (≈1.6 W, 0.89 A peak). Budgets keep the 1.26 A full-scale peak.
+
+### Speaker printed-part volume audit (Woz 2026-11-23 02:45, `hardware/tools/stlvol.py`)
+
+Hinton quoted 30.6 g + 4.3 g for the same two parts. Recomputed two independent ways:
+
+| File (upstream b23317a `print/`) | sha256 (first 16) | Units | Triangles | Open edges | Divergence volume | Ray-parity volume (0.5 mm grid) | Bbox | Solid PLA 1.24 g/cm³ |
+|---|---|---|---|---|---|---|---|---|
+| speaker_stand.stl | eb306cdc8693a44d | mm | 21 390 | 0 | 6.986 cm³ | 6.991 cm³ | 51.4 × 46.0 × 47.4 mm (112.1 cm³) | 8.66 g |
+| speaker_interface.stl | c363018e1ed27e34 | mm | 2 316 | 0 | 1.804 cm³ | 1.804 cm³ | 38.6 × 20.8 × 36.9 mm (29.7 cm³) | 2.24 g |
+
+- Units are mm: head.stl from the same export spans 199.8 × 197.3 × 59.4 mm.
+- Both meshes are closed (every edge shared by exactly 2 triangles), so the divergence volume is exact; the ray-parity check agrees within 0.1 %.
+- Hinton's figures imply 24.7 cm³ and 3.5 cm³. Neither matches the bbox. A convex-hull or mesh-inertia volume is a plausible cause; not proven. What would change this: a different file sha, or a closed-solid method that gets more.
 
 ## Microphone (BOM line 22, PROPOSED) - rev 02:35 2026-11-23
 
@@ -106,6 +119,14 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 - Recommendation: counterbore Ø5 from inside to leave 1.0 mm wall at the Ø1.0 hole (short port tube, resonance well above voice band). Gasket-seal module to wall, mount on foam, not hard-screwed, to decouple SG90 gear noise through the shell.
 - Mass: not published, budget <= 2 g. CoM about (9.9, 74.5, 25.0) mm.
 - Price: not read yet; line 22 still carries the Adafruit 3421 figure (EUR 15.44) until repriced.
+
+## The unidentified 42 × 33 mm board = Waveshare Bus Servo Adapter (A) (Woz 2026-11-23 02:45, `hardware/tools/boardid.py`)
+
+- Upstream `board.part` (onshape-to-robot metadata): Onshape part "Board <1>", document 64074dfc…, its own Part Studio fbc3ecd1…, modelled in the duck's main document, not in the a18ff8cc electronics library that holds the Pi, BNO055, BMS, SG90, charger and switch.
+- Mesh: a featureless 42.0 × 33.0 × 1.6 mm plate, 2.14 cm³ (a solid 42 × 33 × 1.6 slab is 2.22 cm³). No components modelled.
+- Upstream BOM line "Servo control board" = [Waveshare Bus Servo Adapter (A)](https://www.waveshare.com/bus-servo-adapter-a.htm). Waveshare: **42.00 × 33.00 mm**, holes 37 × 28 mm, **16 g**. Exact size match: high confidence it is this board. It is not the amp and not the regulator.
+- robot.xml places the same mesh **twice**: in the trunk next to the BNO055, and in `head_assembly` at x 30.5…32.1, y −76…−34, z −38.6…−5.5 (flat under the shell top, mirror of the Pi, below the speaker stand). The upstream BOM buys **1**. One instance is a CAD duplicate; the files don't say which.
+- **Mass impact.** quack-core carries no Waveshare board (our trunk IMU-to-servo board replaces it). If Playground's 406.6 g head counts the head instance, the trained head includes a phantom board: ≈ 4 g if Onshape used an FR4-like density on the 2.14 cm³ plate, up to 16 g if a real mass was set. robot.xml can't tell which; Hinton has the Playground XML. Our 438.6 g estimate is unchanged until that is resolved (this board was never added or removed in it).
 
 ## Head mass with audio + mic (Woz est., nothing weighed)
 
