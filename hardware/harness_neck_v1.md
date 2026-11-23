@@ -16,6 +16,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 | Servo-switch gate (added 2026-11-23) | SW_EN (Pi e-stop GPIO, head) to trunk-board switch gate; pull-down to OFF on the trunk side | 26–28 AWG | µA | n/a; broken wire = servos off |
 | USB, Pi to Waveshare adapter | upstream 50 cm micro-USB to USB-C | — | data | — |
 
+- **INA226 ALERT (proposed 2026-11-23 09:55, BOM line 24).** If line 24 is accepted, its ALERT output uses the spare JST-GH pin: 17 conductors, JST-GH 10 fully used (10/10).
 - **Neck conductor count (after SW_EN).** 16 conductors + the USB cable, up from 15 under the two-pair split (PI + AUX). Power 4 (PI pair, AUX pair), signals 9 (I²C SDA, SCL, 2 twist GNDs, 3V3; foot GPIO22, GPIO27, foot GND; SW_EN), STS bus 3 (stock Feetech daisy-chain lead, not in the harness connector). If the BNO055 moves to UART mode, the I²C group becomes TX/RX/GND + 3V3: 1 fewer.
 - **Neck connectors (proposed, ratings to confirm at schematic).** Power: Molex Micro-Fit 3.0, 2×2 (4 pos), one circuit per pin; per-pin load ≤ 2.76 A. Signals: JST-GH 10-pin (9 used + 1 spare). Both keyed, with strain relief on the trunk side of the neck pitch joint.
 - **Pi pair.** Only the PI pair feeds the LTC3226, and only the Pi and camera are held up.
@@ -128,3 +129,41 @@ On PFO (GPIO6) the handler executes **torque off within one 20 ms control tick**
 So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands. Not all 16 are behind the servo switch: the 2 SG90 are on 5V_AUX, and that is deliberate.
 
 **Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: ≥ 40 A, ≤ 5 mΩ, with gate pulled to OFF by default so a broken neck wire = servos off.
+
+## Line 9 / line 10 parts as priced (Woz 2026-11-23 09:55)
+
+- **TPS56637 stage** (TI SLVSEG1A Table 4, 5 V row; LCSC qty-1 prices): TPS56637RPAR C841386, L Vishay IHLP3232DZER3R3M11 3.3 µH C511015 (14 mΩ, Isat 9.7 A; TI's own reference inductor), 2 × 22 µF 25 V X7R 1210 GRM32ER71E226KE15L C21397 out + 1 in, 100 nF VIN + BOOT, R6 75 k / R7 10 k 0.1 % (C723587 / C95204) → 0.6 × (1 + 75/10) = **5.10 V** exact. Total **€4.70**.
+- **Efficiency.** TI Fig. 13 (5 V out, the same inductor, FCCM), lowest plotted VIN 8 V: **~93 % at ~5 A** (Woz curve read, ±1 pt). There is no 7.4 V curve. Hinton's 90 % stands as conservative; the bench point at 7.4 V / 4.9 A replaces it.
+- **LTC3226 path P-FET:** TI CSD25404Q3 (5.5 / 6.5 mΩ typ / max at −4.5 V). **11.7 mV max at 1.8 A**, inside the ≤ 18 mV spec. Line 10 total **€9.05**. **Stock flag:** LTC3226 and CSD25404Q3 both show 0 at LCSC; source them from Mouser/DigiKey before the HAT order.
+
+## Pack sense for the Pi (BOM line 24, PROPOSED 2026-11-23 09:55)
+
+- **v1 as drawn has no pack-current sense and no pack-V ADC.** The only readings are per-servo Present_Voltage (addr 62) and Present_Current (addr 69) over the STS bus.
+- **Proposal:** TI INA226 + 1 mΩ 2512 shunt, high-side on the trunk board at the BMS output, upstream of the regulator star.
+  - Bus: the same 100 kHz trunk I²C as the BNO055, address 0x40.
+  - Rate: 588 µs conversions with 4× averaging gives ~213 Hz for the V/I pair.
+  - Alert: the ALERT pin is set to bus-undervoltage 6.3 V, so the loaded floor gets a hardware edge on a Pi GPIO.
+  - Cost: €0.77.
+- **Effect on the stand-up rule:** the shunt adds 1 mΩ to the shared path (+0.024 V at 23.9 A). The per-unit R step must be measured downstream of the shunt, or have 1 mΩ added.
+- **It also replaces estimates with data:** walking current and the rest-voltage → SoC map below.
+
+## Runtime cost of the 7.85 V stand-up gate (Woz 2026-11-23 09:55)
+
+Source: Molicel INR-18650-P30B product data sheet, "Discharge Rate Characteristics" plot. These are Woz reads of the 0.2C curve at 23 °C, ±100 mAh; that curve is close to rest voltage at 0.6 A. 2S pack, so cell mAh = pack mAh.
+
+| Rest gate | Per cell | Discharged when the gate is reached (0.2C curve) | Capacity above the gate (of ~2,930 mAh at 0.2C) |
+|---|---|---|---|
+| **7.85 V (provisional)** | 3.92 V | ~750 mAh | **~26 %** |
+| 7.20 V (old) | 3.60 V | ~1,800 mAh | ~61 % |
+
+- **Cost: about 1,050 mAh, or about 36 % of rated capacity, that can no longer start a stand-up.**
+- **Walking itself is not cut.** Walking continues below the gate while the loaded 6.3 V check holds. Only stand-up and recovery after a fall need the gate.
+- **Walking current is not published** in the upstream docs or our repo (searched 2026-11-23). The minutes below are for assumed pack currents (Woz estimates). The INA226 line above is how we measure the real figure.
+
+| Assumed walking pack current (est.) | Minutes above the 7.85 V gate (~750 mAh) | Minutes above 7.2 V (~1,800 mAh) |
+|---|---|---|
+| 2 A | ~22 | ~54 |
+| 3 A | ~15 | ~36 |
+| 4 A | ~11 | ~27 |
+
+- With a per-unit gate of ≤ 7.60 V (packs screened at ≤ 50 mΩ) the window grows. Reading the same curve, 3.80 V/cell sits at ~1,150 mAh, which is ~23 min at 3 A (est.).

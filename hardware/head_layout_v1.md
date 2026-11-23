@@ -94,7 +94,7 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 - The speaker and both printed parts are already in Playground's 406.6 g head (`full_speaker`, `speaker_interface`, `speaker_stand`). Only the amp is new mass.
 - **Clearances:** Pi + HAT at y +31.8…+63 (opposite side, > 60 mm). Camera board/bracket z ≤ −47 (> 38 mm). Projector LED at (24, 0, −59), reflector ≤ Ø20 (> 19 mm in y). No clash.
 - **GPIO:** BCLK GPIO18 (pin 12), LRCLK GPIO19 (pin 35), DIN GPIO21 (pin 40), SD_MODE GPIO4 (pin 7). No clash with GPIO12/13 (antenna PWM), 14/15 (BNO055 UART fallback), 22/27 (feet), 23–25 (LEDs, projector). PFO proposed on GPIO6 (pin 31).
-- **Page:** max_volume = −3 dBFS (≈1.6 W, 0.89 A peak). Budgets keep the 1.26 A full-scale peak.
+- **Page:** max_volume = **−6 dBFS** (−12 dBFS while an SG90 moves); supersedes −3 dBFS. See "Audio driver" below for the numbers. Budgets keep the 1.26 A full-scale peak.
 
 ### Speaker printed-part volume audit (Woz 2026-11-23 02:45, `hardware/tools/stlvol.py`)
 
@@ -118,7 +118,7 @@ Hinton quoted 30.6 g + 4.3 g for the same two parts. Recomputed two independent 
 - Port: Luxo left wall, head_assembly (9.9, +79.2, 25.0), Ø1.0 mm. Ray-cast (hardware/tools/micport.py, 5 rays, port +-3 mm): wall 3.2 mm thick (y 76.0...79.2), then clear air across the head to the opposite wall at y -76.0. Nearest parts: Pi 26.3 mm, bottom sheet 26.7 mm, head-roll mount 56.2 mm, head servo case 72.7 mm, antenna SG90 L 72.0 mm, SG90 R 132.1 mm, 42x33 board 119.6 mm. Module (14 x 14 mm, about 3 mm stack) occupies y 76.0...73; Pi top face at y 63 leaves about 10 mm.
 - Recommendation: counterbore Ø5 from inside to leave 1.0 mm wall at the Ø1.0 hole (short port tube, resonance well above voice band). Gasket-seal module to wall, mount on foam, not hard-screwed, to decouple SG90 gear noise through the shell.
 - Mass: not published, budget <= 2 g. CoM about (9.9, 74.5, 25.0) mm.
-- Price: not read yet; line 22 still carries the Adafruit 3421 figure (EUR 15.44) until repriced.
+- Price: EUR 3.10, BerryBase GY-INMP441 (listed not in stock 2026-11-23; listing gross weight 2 g). BOM line 22 updated 09:55.
 
 ## The unidentified 42 × 33 mm board = Waveshare Bus Servo Adapter (A) (Woz 2026-11-23 02:45, `hardware/tools/boardid.py`)
 
@@ -139,3 +139,94 @@ Hinton quoted 30.6 g + 4.3 g for the same two parts. Recomputed two independent 
 - **Shift reference:** every "CoM shift" is the 3-D distance from Playground's head_assembly CoM (8.15, −3.91, 22.77) mm at 406.6 g.
   - Camera + HAT: 434.6 g, (8.3, −1.7, 20.4), shift 3.2 mm.
   - Camera + HAT + amp + mic (left wall): 438.6 g, (8.31, −1.55, 20.44), shift 3.3 mm.
+
+## Camera lens vs Luxo's ≤ Ø4 window (Woz 2026-11-23 09:55)
+
+- **Conflict.** The Camera Module 3 product brief (RP-008151-DS) gives a lens barrel of **Ø5.75 mm**. A Ø4 window is smaller than the barrel itself, so it cuts into the 66° × 41° (75° diagonal) field of view at any lens position. Ø4 does not work for the CM3.
+- **Window needed** (Woz geometry, thin-aperture approximation using the barrel diameter as the clear aperture, which is an upper bound: the real entrance pupil is smaller and not published):
+  - Lens barrel pushed into a bore so its front is flush with the outer face (z = −59.05): window = barrel bore **Ø6.0** (0.25 mm clearance), with no wall left in front of the glass.
+  - Lens front at the inner face (z = −56.1, 3 mm wall): window ≥ 5.75 + 2 × 3 × tan 37.5° = **Ø10.4** (diagonal half-FOV 37.5°).
+  - The 15° up-tilt makes the bottom edge worse. Use a stepped or angled window, not a straight hole.
+- **Recommendation:** Ø6.0 bore, with the barrel flush to the outer face and a 0.5 mm chamfer. Luxo decides whether a Ø6 dark ring reads as a "nostril" or needs a bezel. Luxo must ack; until then the mount stays at x = 0.
+
+## Right eye = mirrored left_eye.stl at 4.3 mm (Woz 2026-11-23 09:55, `hardware/tools/eyes.py` on upstream b23317a `print/`)
+
+| STL (sha256, first 16) | Thickness (axis) | Outline | Bore | Volume | Solid PLA mass |
+|---|---|---|---|---|---|
+| left_eye.stl 04ec9038953f63f5 | 4.3 mm | 35 × 35 mm | Ø25.0 | 1.428 cm³ | 1.77 g |
+| right_eye.stl 1d8ab5b5f5f153a2 | 8.4 mm | 40 × 40 mm | Ø25.0 | 4.629 cm³ | 5.74 g |
+| bulb.stl 043cea34b4b37867 | 2.0 mm, print x 115–117 (3 mm behind the eye's back face at x 120) | 35 × 35 mm | Ø8 centre hole, inner ring r 8.0–8.6 mm | 1.695 cm³ | 2.10 g |
+
+- **Fit.** Both eyes have the same Ø25 bore and start at the same back plane (print x = 120). A mirrored left eye (y → −y) therefore sits on the same Ø25 head eye hole (eye-hole edges at y ±27.5 on both sides). The 35 mm outline still overlaps the hole by 5 mm radially. **Fits, medium confidence:** this is mesh geometry only and is confirmed on the test print.
+- **LED / mount.** The upstream bulb carrier (Ø8 hole, seat ring r 8.0–8.6) is behind the eye plane and does not touch the eye part. Changing the eye leaves the LED carrier and its 3 mm gap unchanged. Any LED or LED ring up to Ø25 OD passes through the bore. Luxo's LED part number is not in this repo, so its own fit is not checked.
+- **Mass / CoM.** −3.97 g at the right eye. Head **438.6 → 434.6 g**, CoM (8.31, −1.55, 20.44) → **(8.29, −1.20, 21.20) mm**. That is 3.14 mm from Playground's CoM, still under 5 mm and inside 366–447 g. Hinton's regression list gets this delta.
+
+## Audio driver: combined overlay, gain, volume cap, listening indicator (Woz 2026-11-23 09:55)
+
+**Overlay** (`quack-audio`). Full duplex on the one PCM block: BCLK GPIO18, LRCLK GPIO19, mic DATA → PCM_DIN GPIO20, amp DIN ← PCM_DOUT GPIO21. The BCM I²S pins default to 18–21, so there is no pinctrl fragment. 48 kHz. The CPU DAI is forced to 2 × 32-bit slots = **64 BCLK/frame = 3.072 MHz**. That is the same clock as the MAX98357A datasheet test condition and inside the INMP441's 3.2 MHz max. The structure follows the stock `max98357a-overlay.dts` (raspberrypi/linux rpi-6.6.y). It was **not compiled here**: there is no dtc on the Team Computer.
+
+```dts
+/dts-v1/;
+/plugin/;
+/ {
+    compatible = "brcm,bcm2835";
+    fragment@0 { target = <&i2s_clk_producer>; __overlay__ { status = "okay"; }; };
+    fragment@1 {
+        target-path = "/";
+        __overlay__ {
+            quack_amp: max98357a {
+                compatible = "maxim,max98357a";
+                #sound-dai-cells = <0>;
+                sdmode-gpios = <&gpio 4 0>;      /* SD_MODE GPIO4: PF/safe-stop mute */
+                status = "okay";
+            };
+            quack_mic: inmp441 {
+                compatible = "invensense,ics43432"; /* mainline I2S MEMS mic codec, capture only */
+                #sound-dai-cells = <0>;
+                status = "okay";
+            };
+        };
+    };
+    fragment@2 {
+        target = <&sound>;
+        __overlay__ {
+            compatible = "simple-audio-card";
+            simple-audio-card,name = "quack-audio";
+            simple-audio-card,format = "i2s";
+            simple-audio-card,bitclock-master = <&quack_cpu>;
+            simple-audio-card,frame-master = <&quack_cpu>;
+            status = "okay";
+            quack_cpu: simple-audio-card,cpu {
+                sound-dai = <&i2s_clk_producer>;
+                dai-tdm-slot-num = <2>;
+                dai-tdm-slot-width = <32>;          /* forces 64 fs */
+            };
+            simple-audio-card,codec {
+                sound-dai = <&quack_amp>, <&quack_mic>; /* multi-codec link */
+            };
+        };
+    };
+};
+```
+
+Bench / software-owner checks, all before this is called done:
+1. `dtc -@ -I dts -O dtb` compiles it. `modinfo snd-soc-ics43432 snd-soc-max98357a` shows both modules in the shipped kernel.
+2. The kernel accepts a multi-codec link in simple-audio-card. If it doesn't, fall back to `googlevoicehat-soundcard`, which is Google's MAX98357A + ICS-43432 design. Its overlay drives SD_MODE on **GPIO16**, so our GPIO4 would need a param or a fork.
+3. `aplay` + `arecord -f S32_LE -r 48000 -c 2` run at the same time. Scope BCLK: 3.072 MHz. The mic data is in the left slot.
+
+**Amp gain: keep 9 dB** (GAIN pin unconnected, no part, the module default). The MAX98357A datasheet gives gain relative to 2.1 dBV, so 0 dBFS at 9 dB = 11.1 dBV = 3.59 Vrms = 3.2 W into 4 Ω. That is already at the 5 V clip point (Adafruit: 3 W at 10% THD, 2.5 W at 1%). 12/15 dB would only clip earlier, and a lower gain throws away headroom that the softvol cap already controls. Tolerance 8.4–9.6 dB.
+
+**Page volume caps** (ALSA softvol, 4 Ω, from the 9 dB figure):
+
+| Cap | Vrms | Power | Peak current |
+|---|---|---|---|
+| 0 dBFS (cap bypassed, bench only) | 3.59 V | 3.2 W | 1.27 A (the 1.26 A budget) |
+| **−6 dBFS = max_volume** | 1.80 V | 0.81 W | 0.64 A |
+| **−12 dBFS while any SG90 is moving** | 0.90 V | 0.20 W | 0.32 A |
+
+At −12 dBFS the AUX pair peak is 1.5 A (SG90 budget) + 0.32 A = 1.82 A, against a 2.76 A design.
+
+**Listening indicator: use Luxo's eyes, no separate LED in v1.** Why:
+- A separate LED needs a new GPIO, a new window in the shell and a new part.
+- A software-driven LED proves no more than an eye state does: the INMP441 is always powered from 3.3 V, so neither one is a hardware guarantee.
+- Recommendation: Luxo owns a distinct "listening" eye pattern. If a hardware privacy guarantee is wanted later, put a GPIO-switched load switch on the mic 3V3 (about 1.4 mA) and tie the indicator to that same switch. That is v2.

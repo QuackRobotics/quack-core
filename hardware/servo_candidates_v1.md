@@ -164,3 +164,9 @@ Source: FEETECH STS/SMS control table as used by LeRobot (`STS_SMS_SERIES_CONTRO
 ## Option B servo (6 joints)
 
 Option B (Naoufel 2026-11-22 22:32) = **STS3046 (ST-3046-C001)** on 2 knees, 2 hip pitch, 2 ankles. It is the only option-B candidate in this file. The 4 clamped joints (2 hip_yaw, 2 hip_roll) stay **stock STS3215-C001**, so Hinton's use of the STS3215 line there is correct. Added to the BOM as line 23, PROPOSED, not in the TOTAL. Status of line 2 stays SUPERSEDED-PENDING until Atlas/Chief decide B.
+
+## Status 2026-11-23 09:55 (Woz)
+
+- **Clamp register plan** (EEPROM 16 = 357, SRAM 48 rescaled every tick, Protection_Current 28 backstop): **still waiting for Atlas's ack.** Torque-arm bench at 6.3 / 7.4 / 8.4 V is needed before signing.
+- **ω_c ≈ 2.0 rad/s** is the only speed-cap figure. The earlier 2.17 rad/s is withdrawn in 26f2173, so the Chief/Woz mismatch is closed.
+- **Option B (line 23)** is still PROPOSED. The STS3046 unit price was not re-read today.
