@@ -59,7 +59,7 @@ jobs:
         if: ${{ hashFiles('sim/requirements.txt') != '' }}
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
-          pip install -r sim/requirements.txt
+          pip install --require-hashes -r sim/requirements.lock.txt
       - run: pytest --cov=./ --cov-report=xml
         if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
 
@@ -91,7 +91,18 @@ jobs:
       - name: Install MuJoCo + Python deps
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
-          pip install -r sim/requirements.txt
+          pip install --require-hashes -r sim/requirements.lock.txt
+      - name: Record sim environment (python, mujoco, onnxruntime, numpy, lockfile hash)
+        run: |
+          python -c 'import platform, mujoco, onnxruntime, numpy; print("python", platform.python_version()); print("mujoco", mujoco.__version__); print("onnxruntime", onnxruntime.__version__); print("numpy", numpy.__version__)' | tee sim-env.txt
+          echo "lockfile_sha256 $(sha256sum sim/requirements.lock.txt | cut -d' ' -f1)" | tee -a sim-env.txt
+          pip freeze --all > sim-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sim-env
+          path: |
+            sim-env.txt
+            sim-pip-freeze.txt
       - name: Fetch pinned upstream assets (sha256-verified)
         run: bash sim/fetch_upstream.sh upstream
       - name: Sim gate - walk 10 s at 0.15 m/s without falling, >= 0.5 m forward
