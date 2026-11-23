@@ -29,7 +29,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 ## Routing rules
 
 1. Keep I²C away from the STS bus and both 5 V pairs. Run it on the opposite side of each joint's cable channel, and never in the same sleeve as the STS bus.
-2. Twist SDA with a GND and SCL with a GND, at about 1 turn per 25 mm. Run I²C at 100 kHz, the Pi default; don't raise it.
+2. Twist SDA with a GND and SCL with a GND, at about 1 turn per 25 mm. Run I²C at 100 kHz, the Pi default; don't raise it. 400 kHz only if the measured neck bus capacitance is below the 400 pF I²C limit (Atlas line-24 condition 6); not measured, so v1 stays at 100 kHz.
 3. Give each joint a service loop sized for the full joint range. Head yaw (±160°) gets a flat loop around the yaw axis inside `head_yaw_to_roll`, not a straight pass.
 4. Strain-relieve each bundle at the trunk exit, at every joint and at the HAT. Every cable channel edge in the path must be free of sharp edges.
 5. Silicone insulation only. PVC stiffens and cracks at the yaw loop.
@@ -47,6 +47,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 - **Audio + stall rail test (Atlas condition 4).** Both SG90s stalled and full-scale audio (0 dBFS, max_volume cap bypassed) for 60 s. Scope 5V_PI at the Pi pins referenced to the Pi GND pin. Pass: ≥ 4.63 V min, PFO never asserts, no audible dropout. Repeat with the camera streaming.
 - **No back-feed into 5V_AUX during hold-up (Chief 09:11).** 5V_AUX splits from 5V_PI at the TPS56637 output in the trunk, upstream of the LTC3226. The only path from the supercaps to 5V_AUX is LTC3226 VOUT/VCAP → VIN → PI pair → trunk junction → AUX pair. Reverse blocking of that path is NOT yet confirmed from the ADI datasheet. Test: trunk regulator off, 10 Ω on the AUX pair at the trunk, supercaps charged. Trigger PFI and scope 5V_AUX plus the current in the PI pair. Pass: 5V_AUX < 0.5 V within 10 ms, PI-pair reverse current < 1 mA, hold-up ≥ 0.53 s. If it fails: add an ideal-diode (reverse-blocking) stage on 5V_PI at the HAT input, ahead of the LTC3226 VIN, and recheck the 4.75 V rail margin.
 - **PF mute.** On PFO, SD_MODE (GPIO4) goes low first in the handler; scope SD_MODE vs PFO, pass ≤ 50 µs.
+- **SG90 back-feed with 1 kΩ fitted (Chief 09:52, extends the 1bbfeee scope check).** 5V_AUX dead (regulator off, AUX pair disconnected at the trunk), both GPIO12 and GPIO13 held HIGH (3.3 V, static). Measure (a) the SG90 signal pin at the servo connector and (b) the dead 5V_AUX rail at the head end, with a DMM and on the scope. Pass: 5V_AUX < 0.5 V and the SG90 does not twitch or power up; record the signal-pin voltage and the current through each 1 kΩ (V across R / 1 kΩ, expected ≤ 2.7 mA, Woz estimate). If 5V_AUX rises toward ~2.5 V the leak is partly powering the rail: raise the series R to 4.7 kΩ after re-checking the pulse edges, and the firmware rule below becomes mandatory, not belt-and-braces.
 
 ## 5 V regulator: TPS56637 @ 5.10 V on the trunk board (DECIDED 2026-11-23 02:26)
 
@@ -108,6 +109,7 @@ At the 23.9 A clamped stand-up worst case:
 - The hard guard stays the loaded check: abort stand-up / sit down if the pack is < 6.3 V for > 50 ms (filtered so single PWM edges don't trip it).
 - **Max-R reject cap: R_measured > 60 mΩ → reject the pack** (its per-unit gate would exceed 7.83 V, i.e. above the provisional 7.85 V that the whole fleet is sized to). Screening target ≤ 50 mΩ → gate ≤ 7.60 V; if every pack in a batch screens ≤ 50 mΩ, the batch gate may drop to its per-unit values.
 - Two separate checks (Atlas acks both): (1) Woz's 50 ms < 6.3 V loaded abort during stand-up — the hard guard; (2) Atlas's > 1 s < 6.3 V loaded low_battery event — a fuel-gauge signal.
+- **Fleet default until benched (Chief 09:52, 2026-11-23).** Every unit ships and runs on the 7.85 V rest gate until it has been benched. A lower per-unit gate (toward ~3.7 V/cell) is allowed only after that unit's bench R and its MEASURED stand-up current I_su are in: gate = 6.3 V + I_su,measured × R_measured + 0.1 V (the 23.9 A design figure is replaced by the measured I_su). This is a factory bring-up step, logged per serial number; no field or software-only lowering. Atlas's 7.16 V worked example is ~7.09 V (Chief's correction); it is an illustration only and no unit uses it.
 - Walking draws less than stand-up, so walking may continue below the rest gate while the loaded check holds. power.low_battery (Luxo / Page / Atlas) = **7.85 V rest, provisional**, then the per-unit value once bench R is in.
 
 ## Power-fail safe stop (Atlas, settled 2026-11-23; Quack Chief)
@@ -130,6 +132,8 @@ So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands.
 
 **SG90 PWM series resistors (Woz 2026-11-23 10:25).** Fit **1 kΩ in series on GPIO12 and GPIO13**, at the HAT. This follows the same logic as the amp's 100 Ω. If 5V_AUX is down while a GPIO is high, the SG90 signal input could back-feed its own unpowered rail through its input protection. The 1 kΩ caps that at ≤ (3.3 − ~0.6 V diode) / 1 kΩ ≈ 2.7 mA per pin (Woz estimate), which is within a Pi GPIO's drive. The SG90 input current at 3.3 V is **not published** (I found no datasheet figure). The input is a logic-level PWM receiver, so 1 kΩ should not change the edges at 50 Hz. Bench check: scope the pulse at the servo with 1 kΩ fitted and confirm the servo tracks. The SG90s are **not** cut by the servo switch: on PFI they are stopped by driving PWM low, and 5V_AUX dies with the regulator when the pack goes. Not all 16 are behind the servo switch: the 2 SG90 are on 5V_AUX, and that is deliberate.
 
+**Firmware rule, 5V_AUX off (owner: Atlas; Chief 09:52).** Whenever 5V_AUX is off or unknown (boot before the regulator is up, safe stop, PFO latch, e-stop, brown-out, shutdown), GPIO12 and GPIO13 are driven LOW or set as inputs (no pull-up), never left high and never pulsing. Back-feed into the SG90 is then ~0. Boot default: inputs until the 5 V rail is confirmed. This covers the power-fail safe stop (step 2 above) and also every other path that drops 5V_AUX.
+
 **Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: ≥ 40 A, ≤ 5 mΩ, with gate pulled to OFF by default so a broken neck wire = servos off.
 
 ### Servo-power switch on the trunk board: Atlas's 7 conditions (APPROVED by Quack Chief 2026-11-23 09:44)
@@ -147,6 +151,18 @@ The switch moves from the HAT to the trunk board. It is approved only with all s
 Status: requirements only; the parts are chosen at schematic time (Woz). Atlas owns items 3 and 7 in software (pin defaults, TX low when off).
 
 **Protection_Current (addr 28) backstop: 1.4 A** (Chief 09:44). No objection: 1.4 A is above the 1.0 A clamp with margin for the 8.4 V full-pack case before the per-tick rescale catches up (duty 0.405 at 8.4 V gives ~1.14 A stall), and well below the STS3215 7.4 V stall (~2.4 A est.). My earlier 1.2 A was too close to 1.14 A. ≈ 215 counts if the 6.5 mA/LSB unit is right (bench-confirm).
+
+## Distributor check, list only, NOTHING ordered (Woz 2026-11-23 10:08 Paris)
+
+Mouser (Access Denied page) and DigiKey (Cloudflare check) both blocked this computer's browser and fetch today, so their own unit price and stock were NOT read. Prices below are the Octopart headline (lowest listed, distributor not named) and are labelled as such.
+
+| Part | Order code | Mouser | DigiKey | Price read | Stock |
+|---|---|---|---|---|---|
+| LTC3226 (backup PowerPath) | LTC3226IUD#PBF (I-grade, as asked); LTC3226EUD#PBF (E-grade) | [Mouser EUD](https://eu.mouser.com/ProductDetail/Analog-Devices/LTC3226EUDPBF?qs=hVkxg5c3xu9ymFYCt8%252BBGQ%3D%3D) | [DigiKey search](https://www.digikey.fr/en/products/result?keywords=LTC3226) | EUR 5.619 ([Octopart IUD](https://octopart.com/part/analog-devices/LTC3226IUD%23PBF), lowest listed) | not read |
+| CSD25404Q3 (LTC3226 path P-FET) | CSD25404Q3 (reel), CSD25404Q3T (small reel) | [Mouser search](https://www.mouser.com/c/?q=CSD25404Q3) | [DigiKey 5764611](https://www.digikey.com/en/products/detail/texas-instruments/CSD25404Q3/5764611) | EUR 0.412 ([Octopart](https://octopart.com/part/texas-instruments/CSD25404Q3), lowest listed, likely a bulk break) | not read; TI lists it ACTIVE |
+| Mic, INMP441 module alt | INMP441 itself: no Mouser/DigiKey listing found (TDK part is end-of-life; atomic14 calls ICS-43434 its replacement). Module alt at both: Adafruit 6049 (ICS-43434) | [Mouser 6049](https://www.mouser.com/en/ProductDetail/Adafruit/6049?qs=olJun0bQHM88XeFsw90dVw%3D%3D) | [DigiKey 25589349](https://www.digikey.com/en/products/detail/adafruit-industries-llc/6049/25589349) | US$8.95 at [Adafruit](https://www.adafruit.com/product/6049) | Adafruit page: ICS-43434 DISCONTINUED, Adafruit names SPH0645 as replacement (rejected 02:24) |
+
+Mic sourcing consequence: there is no long-life Mouser/DigiKey module for line 22. Keep the INMP441 module (BerryBase EUR 3.10, out of stock 2026-11-23) and buy fleet stock now from a second EU seller (TinyTronics / LaskaKit / AZ-Delivery, prices not read), or qualify a current TDK I²S part at schematic time. Not ordered.
 
 ## Line 9 / line 10 parts as priced (Woz 2026-11-23 09:55)
 
