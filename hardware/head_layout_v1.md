@@ -96,16 +96,20 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 - **GPIO:** BCLK GPIO18 (pin 12), LRCLK GPIO19 (pin 35), DIN GPIO21 (pin 40), SD_MODE GPIO4 (pin 7). No clash with GPIO12/13 (antenna PWM), 14/15 (BNO055 UART fallback), 22/27 (feet), 23–25 (LEDs, projector). PFO proposed on GPIO6 (pin 31).
 - **Page:** max_volume = −3 dBFS (≈1.6 W, 0.89 A peak). Budgets keep the 1.26 A full-scale peak.
 
-## Microphone (BOM line 22, PROPOSED)
+## Microphone (BOM line 22, PROPOSED) - rev 02:35 2026-11-23
 
-- Upstream mic = Adafruit 3421, SPH0645LM4H I²S MEMS, bottom port, 600 µA typ, 1.62–3.6 V (Knowles datasheet rev C). Powered from Pi 3.3 V.
-- Full duplex on one I²S block: shares BCLK GPIO18 + LRCLK GPIO19 with the amp; mic DATA → GPIO20 (pin 38); SEL → GND.
-- Placement: front face, +y side, below the eye line, board centre ≈ (−10, +22, −56). Ø1.2 mm port through the front wall with a foam gasket. ≈ 117 mm from the speaker (opposite side), at the front, away from the rear SG90s and the neck servos. Between the camera board edge (y 12.5) and the eye hole. Breakout outline still to be checked against Adafruit CAD; Luxo to place the port cosmetically.
-- Mass ≈ 2 g (est.).
+- Part: INMP441-class I2S MEMS module (SPH0645 rejected per Chief 02:24, Pi bit-alignment issue). Bottom port, 24-bit I2S, 64 SCK per WS frame. Datasheet limits as quoted by secondary sources (TDK PDF not readable this run): SCK 0.5-3.2 MHz, WS 7.8-50 kHz, about 1.4 mA, 1.8-3.3 V. Powered from Pi 3.3 V.
+- 48 kHz: BCLK = 64 x 48 kHz = 3.072 MHz, inside the 3.2 MHz max with 4 % margin. The shared clock MUST run 64 fs (2 x 32-bit slots); a 16-bit/32 fs stream (1.536 MHz) gives the mic too few clocks. MAX98357A accepts 64 fs. Combined overlay must force bclk_ratio 64. Bench: scope BCLK = 3.072 MHz.
+- Wiring: BCLK GPIO18, LRCLK GPIO19 shared with amp; mic SD -> GPIO20; L/R -> GND (left slot). Amp DIN GPIO21.
+- Count: 1 mic in v1. Reason: the only wide baseline is the right wall, which carries the speaker grille (centre (10.1, -79, 24.4)); a second mic there sits beside the speaker. A 2nd INMP441 needs no new GPIO (L/R high, same SD line) so it stays a no-rework option once Luxo finds a right-side spot >= 40 mm from the grille.
+- Port: Luxo left wall, head_assembly (9.9, +79.2, 25.0), Ø1.0 mm. Ray-cast (hardware/tools/micport.py, 5 rays, port +-3 mm): wall 3.2 mm thick (y 76.0...79.2), then clear air across the head to the opposite wall at y -76.0. Nearest parts: Pi 26.3 mm, bottom sheet 26.7 mm, head-roll mount 56.2 mm, head servo case 72.7 mm, antenna SG90 L 72.0 mm, SG90 R 132.1 mm, 42x33 board 119.6 mm. Module (14 x 14 mm, about 3 mm stack) occupies y 76.0...73; Pi top face at y 63 leaves about 10 mm.
+- Recommendation: counterbore Ø5 from inside to leave 1.0 mm wall at the Ø1.0 hole (short port tube, resonance well above voice band). Gasket-seal module to wall, mount on foam, not hard-screwed, to decouple SG90 gear noise through the shell.
+- Mass: not published, budget <= 2 g. CoM about (9.9, 74.5, 25.0) mm.
+- Price: not read yet; line 22 still carries the Adafruit 3421 figure (EUR 15.44) until repriced.
 
 ## Head mass with audio + mic (Woz est., nothing weighed)
 
-- Option C, camera net +10, HAT + caps at (17, 47, 6), + amp 2 g + mic 2 g: **≈ 438.6 g, CoM ≈ (8.22, −1.79, 20.07) mm, 3.4 mm from Playground's CoM.** Inside 366–447 g and under 5 mm. Over the < 20 g rule, so Hinton's regression stands.
+- Option C, camera net +10, HAT + caps at (17, 47, 6), + amp 2 g + mic 2 g on the left wall: **≈ 438.6 g, CoM ≈ (8.31, −1.55, 20.44) mm, 3.3 mm from Playground's CoM.** Inside 366–447 g and under 5 mm. Over the < 20 g rule, so Hinton's regression stands.
 
 ## Frame and origin for every head CoM in this file
 
@@ -113,4 +117,4 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 - **Origin:** the `head_roll` joint point (joint pos 0 0 0 in that body). The roll axis is the body's +z.
 - **Shift reference:** every "CoM shift" is the 3-D distance from Playground's head_assembly CoM (8.15, −3.91, 22.77) mm at 406.6 g.
   - Camera + HAT: 434.6 g, (8.3, −1.7, 20.4), shift 3.2 mm.
-  - Camera + HAT + amp + mic: 438.6 g, (8.22, −1.79, 20.07), shift 3.4 mm.
+  - Camera + HAT + amp + mic (left wall): 438.6 g, (8.31, −1.55, 20.44), shift 3.3 mm.
