@@ -58,6 +58,30 @@ Proposed by Woz, signed off by Atlas 02:24, decided by Quack Chief 02:26. The Po
    - Ripple < 50 mV p-p measured at the HAT (tip-and-barrel probe).
    - BNO055 UART errors = 0 at full load.
 
+## Backup mode (LTC3226): setpoints and Vmin bench (Atlas ack 2026-11-23)
+
+Setpoints (Atlas acked; detail and tolerance stack in BOM line 10):
+- Backup LDO **4.40 V** nominal, 0.1% divider: 4.29–4.51 V over LDO_FB 0.76–0.82 V.
+- PFI trip **4.70 V** nominal, 0.1% divider: trips 4.60–4.80 V, always above the LDO high corner (4.51 V); releases at ≤ 4.88 V, below the HAT minimum (≥ 4.99 V at 5.10 V regulator setpoint).
+- Gate in backup = "the Pi stays up and the sync finishes", not the 4.63 V under-voltage flag.
+
+Hold-up and the load current behind it (5 F stack, LDO path 0.26 Ω = 0.2 Ω pass FET + 0.06 Ω cap ESR, worst stack start 5.17 V, LDO high corner 4.51 V):
+
+| Backup load | Window (worst) | Hold-up worst | Hold-up nominal |
+|---|---|---|---|
+| **1.8 A, camera streaming (design case)** | 5.17 − (4.51 + 1.8 × 0.26) = 0.192 V | **0.53 s** | 5.30 − 4.868 = 0.43 V → 1.2 s |
+| 1.5 A, camera off | 5.17 − (4.51 + 1.5 × 0.26) = 0.27 V | 0.90 s | 5.30 − 4.79 = 0.51 V → 1.7 s |
+
+- **The 0.53 s figure is at 1.8 A, camera streaming.** On PFO the camera stop runs in parallel with the flush, so the load falls toward 1.5 A partway through; 0.53 s is the conservative bound. SD-sync budget = half of 0.53 s = **0.26 s**.
+- Both loads are Woz budgets (Pi Zero 2W 1.5 A design + camera 0.3 A), not measurements. The bench below replaces them.
+
+Vmin bench (Atlas conditions, all must pass before the 4.40 V LDO is locked; 10 boards):
+1. **Real load, not a resistor.** Each board runs the flight load while its 5 V input is ramped down 5.0 → 4.0 V: log writer active with fsync, sync triggered, camera streaming and then stopped by the PFO handler, CPU loaded (all 4 cores). Record the voltage at which the Pi browns out (reset/hang) and whether the sync completed.
+2. **Pass: the sync finishes at ≤ 4.25 V on all 10 boards.** One board needing more than 4.25 V fails the 4.40 V LDO plan → fall back to 2S2P supercaps (10 F, ESR halves) plus load shed, or a buck-boost backup (BOM line 10 item d).
+3. **Sync timed while the under-voltage flag is set.** At 4.40 V the Pi is below its 4.63 V flag and throttles, so PFO-to-fsync-complete time is measured in that throttled state (vcgencmd get_throttled bit 0 set), not at 5 V. Worst of 10 boards must be ≤ 0.26 s (2× margin on 0.53 s).
+4. **1,000 power pulls, fsck clean.** Pull pack power at random points (camera streaming, logging) 1,000 times; after each, fsck the SD card: zero errors, zero lost log records beyond the ≤ 100 ms ring buffer.
+5. **PFI latches into safe stop.** A PFO interrupt latches: servos to safe stop (behaviour per Atlas's safe-stop policy), camera stopped, amp muted (SD_MODE low, GPIO4), log flushed. The latch does NOT clear on PFI release; it clears only after the rail is back above release and CAPGOOD reads high again (boot rule: no servo torque until CAPGOOD). Verify on a scope with a 4.88 V ↔ 4.60 V input toggle: no servo re-enable while toggling.
+
 ## Pack resistance and the stand-up block
 
 Shared path from cells to the regulator tap (the regulator feed is starred at the BMS output, so servo-wire drop downstream of the star is excluded):
