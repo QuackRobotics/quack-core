@@ -72,5 +72,11 @@ The eye flanges (Ø35/Ø40 at y ±40, protruding 4.3/8.4 mm) sit more than 60° 
 
 All cases are inside the 366–447 g training range and under the 5 mm CoM-shift limit. They are over the "< 20 g" rule, however, because the HAT and supercaps were never in any head figure. Hinton's regression is needed whatever we decide.
 
-- **HAT fit.** The HAT must stack on the −x side of the Pi. On the +x side it would hit the shell top (outer x 40.1). Check this in CAD.
+- **HAT fit: checked, fits on the −x side** (Woz 2026-11-23 02:40, `hatfit.py` ray cast of upstream robot.xml head meshes in the `head_assembly` frame, 45 rays over the Pi footprint).
+  - Pi Zero 2W spans x 27.9…32.1, y 31.8…63.0, z −26.5…39.3. Its components face −x, so the header and HAT go on −x.
+  - +x side: the shell top is 0–5 mm away (median 5.0 mm). No room, as expected.
+  - −x side: the only part under the Pi footprint is `head_bot_sheet`, 44.3 mm away (inner face x ≈ −16.3). No servo case, roll mount, camera or SG90 is in that column.
+  - Stack: HAT PCB at x ≈ 17…18.5 (11.5 mm header spacing), 2× BCAP0010 (Ø10) under it to x ≈ 7. That leaves ≈ 23 mm to the bottom sheet. The camera board (y ±12.5) is ≥ 19 mm away sideways.
+  - Revised HAT + caps CoM ≈ (17, 47, 6) mm (was 22, 47, 6). With the camera: ≈ 434.6 g, CoM ≈ (8.3, −1.7, 20.4) mm, a ≈ 2.2 mm shift, mostly +y because the Pi sits off-centre.
+  - Not checked: the speaker (`full_speaker`, `speaker_stand`) is not in robot.xml, so its position against the HAT needs Onshape or Luxo's CAD.
 - **If audio is cut.** The head loses `full_speaker` and its two mounts. Their mass is unknown and is inside the 406.6 g.
