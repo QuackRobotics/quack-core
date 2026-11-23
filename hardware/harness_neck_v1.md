@@ -16,7 +16,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 | Servo-switch gate (added 2026-11-23) | SW_EN (Pi e-stop GPIO, head) to trunk-board switch gate; pull-down to OFF on the trunk side | 26–28 AWG | µA | n/a; broken wire = servos off |
 | USB, Pi to Waveshare adapter | upstream 50 cm micro-USB to USB-C | — | data | — |
 
-- **INA226 ALERT (proposed 2026-11-23 09:55, BOM line 24).** If line 24 is accepted, its ALERT output uses the spare JST-GH pin: 17 conductors, JST-GH 10 fully used (10/10).
+- **INA226 ALERT (BOM line 24; Atlas acked with 7 conditions, 2026-11-23 09:4x; Page ack pending).** ALERT uses the spare JST-GH pin: **17 conductors**, JST-GH 10 fully used (10/10). It is open-drain, pulled up on the Pi side (HAT), and goes to a Pi GPIO interrupt only.
 - **Neck conductor count (after SW_EN).** 16 conductors + the USB cable, up from 15 under the two-pair split (PI + AUX). Power 4 (PI pair, AUX pair), signals 9 (I²C SDA, SCL, 2 twist GNDs, 3V3; foot GPIO22, GPIO27, foot GND; SW_EN), STS bus 3 (stock Feetech daisy-chain lead, not in the harness connector). If the BNO055 moves to UART mode, the I²C group becomes TX/RX/GND + 3V3: 1 fewer.
 - **Neck connectors (proposed, ratings to confirm at schematic).** Power: Molex Micro-Fit 3.0, 2×2 (4 pos), one circuit per pin; per-pin load ≤ 2.76 A. Signals: JST-GH 10-pin (9 used + 1 spare). Both keyed, with strain relief on the trunk side of the neck pitch joint.
 - **Pi pair.** Only the PI pair feeds the LTC3226, and only the Pi and camera are held up.
@@ -43,7 +43,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 
 - Read the IMU at 100 Hz for 10 min while the robot walks. Pass: 0 NACKs and 0 bus resets.
 - Measure 5V_PI at the HAT under a 2.16 A load with the AUX pair loaded at 2.76 A. Pass: ≥ 4.75 V.
-- Flex the head through its full yaw range for 1,000 cycles. Pass: no conductor break and no insulation wear.
+- Flex the head through its full yaw range for 1,000 cycles. Pass: no conductor break and no insulation wear. **Continuity is logged on all 17 neck conductors, including SW_EN and INA226 ALERT** (Atlas line-24 condition 5).
 - **Audio + stall rail test (Atlas condition 4).** Both SG90s stalled and full-scale audio (0 dBFS, max_volume cap bypassed) for 60 s. Scope 5V_PI at the Pi pins referenced to the Pi GND pin. Pass: ≥ 4.63 V min, PFO never asserts, no audible dropout. Repeat with the camera streaming.
 - **No back-feed into 5V_AUX during hold-up (Chief 09:11).** 5V_AUX splits from 5V_PI at the TPS56637 output in the trunk, upstream of the LTC3226. The only path from the supercaps to 5V_AUX is LTC3226 VOUT/VCAP → VIN → PI pair → trunk junction → AUX pair. Reverse blocking of that path is NOT yet confirmed from the ADI datasheet. Test: trunk regulator off, 10 Ω on the AUX pair at the trunk, supercaps charged. Trigger PFI and scope 5V_AUX plus the current in the PI pair. Pass: 5V_AUX < 0.5 V within 10 ms, PI-pair reverse current < 1 mA, hold-up ≥ 0.53 s. If it fails: add an ideal-diode (reverse-blocking) stage on 5V_PI at the HAT input, ahead of the LTC3226 VIN, and recheck the 4.75 V rail margin.
 - **PF mute.** On PFO, SD_MODE (GPIO4) goes low first in the handler; scope SD_MODE vs PFO, pass ≤ 50 µs.
@@ -160,8 +160,16 @@ Status: requirements only; the parts are chosen at schematic time (Woz). Atlas o
 - **Proposal:** TI INA226 + 1 mΩ 2512 shunt, high-side on the trunk board at the BMS output, upstream of the regulator star.
   - Bus: the same 100 kHz trunk I²C as the BNO055, address 0x40.
   - Rate: 588 µs conversions with 4× averaging gives ~213 Hz for the V/I pair.
-  - Alert: the ALERT pin is set to bus-undervoltage 6.3 V, so the loaded floor gets a hardware edge on a Pi GPIO.
+  - Alert: bus-undervoltage **6.0 V, latched** (Atlas condition 3; replaces Woz's 6.3 V). The 6.3 V crouch stays in software (10 consecutive samples).
   - Cost: €0.77.
+- **Atlas's 7 conditions (acked 2026-11-23 09:4x, written in by Woz 09:59 Paris). Schematic requirements for line 24:**
+  1. **Placement.** Shunt on the pack side, after the BMS and before the servo-switch / 5 V regulator split; VBUS sensed at the same node. Kelvin sense: two separate sense traces from the inner edges of the shunt pads to IN+/IN−, no load current in them. Rating ≥ 1 W: the BOM part LR2512D-2W-1mR-1% (LCSC C500612) is 2 W, against 25 A² × 1 mΩ = 0.63 W (3.2× margin).
+  2. **ALERT routing.** ALERT goes to a Pi GPIO interrupt only. It never connects to SW_EN, the servo-switch gate or the SW_EN AND PFO gate. The servo switch is cut by software (safe stop) and by PFO, not by the INA226.
+  3. **ALERT limit.** Bus-undervoltage 6.0 V, latched (Mask/Enable LEN = 1); the Pi clears it by reading Mask/Enable. The 6.3 V crouch stays in software over 10 samples.
+  4. **Pull-up.** ALERT is open-drain: 10 kΩ to 3V3 on the Pi side (HAT), so an open neck wire reads as "alert" (fail-safe direction). Added to line 24 (cents).
+  5. **Flex test.** The 17th neck conductor (ALERT) is in the 1,000-cycle continuity check.
+  6. **I²C speed.** Neck I²C stays at 100 kHz. 400 kHz needs the measured bus capacitance (harness + BNO055 + INA226 + pull-ups) under 400 pF; not measured yet, so 100 kHz is the v1 setting.
+  7. **Address.** INA226 at 0x40 (A0 = A1 = GND). The only other trunk I²C device in this repo is the BNO055, at 0x28 (0x29 with COM3 high), so 0x40 is free. The PCA9615 option is a buffer and has no address. Re-check if any I²C part is added to the trunk.
 - **Effect on the stand-up rule:** the shunt adds 1 mΩ to the shared path (+0.024 V at 23.9 A). The per-unit R step must be measured downstream of the shunt, or have 1 mΩ added.
 - **It also replaces estimates with data:** walking current and the rest-voltage → SoC map below.
 
