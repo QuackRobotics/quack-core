@@ -99,6 +99,28 @@ At the 23.9 A clamped stand-up worst case:
 - Sag = 1.10 V nominal, 1.43 V worst.
 - From a 7.2 V rest pack: 6.10 V nominal, 5.77 V worst. Both are below the 6.3 V loaded floor; the worst case is at the regulator's cold dropout.
 - **So the 7.2 V rest block must rise.** Required rest voltage = 6.3 V + 23.9 A × R: 7.40 V nominal, 7.73 V worst.
-- **Provisional stand-up block: 7.6 V at rest (3.8 V/cell).** Final value per unit = 6.3 V + 23.9 A × R_measured + 0.1 V, with R_measured from a bench step (1 A → 20 A, 1 s, at the BMS output) on every pack.
+- **Provisional stand-up block: 7.85 V at rest (3.92 V/cell)** (Quack Chief 02:40, after Atlas showed 60 mΩ needs 6.3 + 23.9 × 0.060 + 0.1 = 7.83 V; Woz's earlier 7.6 V and 7.73 V omitted the 0.1 V margin and are withdrawn). **The per-unit rule overrides 7.85 V:** final value per unit = 6.3 V + 23.9 A × R_measured + 0.1 V, with R_measured from a bench step (1 A → 20 A, 1 s, at the BMS output) on every pack.
 - The hard guard stays the loaded check: abort stand-up / sit down if the pack is < 6.3 V for > 50 ms (filtered so single PWM edges don't trip it).
-- Walking draws less than stand-up, so walking may continue below 7.6 V rest while the loaded check holds. power.low_battery (Luxo / Page / Atlas) = **7.6 V rest, provisional**, until bench R is in.
+- **Max-R reject cap: R_measured > 60 mΩ → reject the pack** (its per-unit gate would exceed 7.83 V, i.e. above the provisional 7.85 V that the whole fleet is sized to). Screening target ≤ 50 mΩ → gate ≤ 7.60 V; if every pack in a batch screens ≤ 50 mΩ, the batch gate may drop to its per-unit values.
+- Two separate checks (Atlas acks both): (1) Woz's 50 ms < 6.3 V loaded abort during stand-up — the hard guard; (2) Atlas's > 1 s < 6.3 V loaded low_battery event — a fuel-gauge signal.
+- Walking draws less than stand-up, so walking may continue below the rest gate while the loaded check holds. power.low_battery (Luxo / Page / Atlas) = **7.85 V rest, provisional**, then the per-unit value once bench R is in.
+
+## Power-fail safe stop (Atlas, settled 2026-11-23; Quack Chief)
+
+On PFO (GPIO6) the handler executes **torque off within one 20 ms control tick**, in this order (all three are issued in the same tick):
+1. Broadcast torque-disable on the STS bus (ID 0xFE, Torque_Enable addr 40 = 0).
+2. Open the servo-power switch (same GPIO as the e-stop). Stop the SG90 PWM on GPIO12/13 (drive low, no pulses: SG90 goes limp).
+3. Pull SD_MODE (GPIO4) low: amp muted.
+
+**Latched, no auto-resume.** Re-arm needs all three: CAPGOOD high, rest pack voltage ≥ the stand-up gate (7.85 V provisional / per-unit), and an explicit operator re-arm (gamepad or API).
+
+### Which servo is on which rail (16 servos)
+
+| Servos | Qty | Supply | Behind LTC3226 / supercaps? | Cut on PFO by |
+|---|---|---|---|---|
+| STS leg + neck servos (STS3215, STS3046 on the 6 option-B joints if adopted) | 14 | Pack direct (2S, 6.0–8.4 V) via the servo-power switch | **No** | bus torque-disable + switch open |
+| SG90 antennas (GPIO12/13 PWM) | 2 | 5V_AUX neck pair from the trunk TPS56637 (SG90 is a 4.8–6 V part, cannot sit on the pack) | **No** — 5V_AUX never touches the HAT backup rail | PWM stopped on GPIO12/13; 5V_AUX also collapses with the regulator |
+
+So the 0.53 s hold-up (1.8 A = Pi + camera, no servo) stands. Not all 16 are behind the servo switch: the 2 SG90 are on 5V_AUX, and that is deliberate.
+
+**Servo-power switch location (flag):** it must carry the ~25 A stand-up bus current, so it sits on the **trunk board** at the pack, not on the HAT. The AO3401A in the original HAT plan (≈4 A P-FET) cannot carry the bus and is withdrawn for this role. The Pi drives the switch gate from the e-stop GPIO through one neck conductor (added to the conductor list at schematic time). Part to be chosen at schematic: ≥ 40 A, ≤ 5 mΩ, with gate pulled to OFF by default so a broken neck wire = servos off.

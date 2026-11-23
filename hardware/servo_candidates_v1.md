@@ -137,3 +137,29 @@ FEETECH publishes **no current–torque curve** for the C001, only two points (F
 - At our pinned rated 0.49 Nm: ≈ 0.63 A. At the 1.0 A EEPROM clamp: ≈ 0.88 Nm available.
 - Caveats: gear friction makes the real line slightly non-linear near no load; the firmware protection-current register can cap current below stall; temperature raises winding R (≈ +0.39 %/°C copper), lowering hot stall current.
 - **Bench to replace this:** one C001 on a torque arm at 7.4 V, 6 load points 0–stall, log bus present-current vs torque. Until then Hinton should treat this as a model.
+
+## 1.0 A clamp: which register (Woz 2026-11-23 09:10)
+
+Source: FEETECH STS/SMS control table as used by LeRobot (`STS_SMS_SERIES_CONTROL_TABLE`, lerobot v0.3.2 `motors/feetech/tables.py`, citing FEETECH's SMS-STS e-manual). Not yet checked on our servo firmware.
+
+| Register | Addr | Area | What it does |
+|---|---|---|---|
+| Max_Torque_Limit | 16 (2 B) | EEPROM | Power-on default output limit, 0–1000 = 0–100 % of **PWM duty**. Copied to Torque_Limit at boot. |
+| Protection_Current | 28 (2 B) | EEPROM | **Over-current protection trip**, not a regulator: above it for Over_Current_Protection_Time (addr 38) the servo unloads (torque off). |
+| Torque_Limit | 48 (2 B) | SRAM | Live duty limit, writable every tick. |
+| Present_Voltage / Present_Current | 62 / 69 | SRAM | Read-back. |
+
+**Consequence for the clamp (and for Hinton's low-V verdict):**
+- Neither register is a true regulating current limit. Protection_Current used alone would turn the hip servos **off** at 1.0 A (a fall), so it cannot be "the clamp".
+- The clamp is the **duty limit**. At stall the STS3215 behaves as ≈ 3.0 Ω (7.4 V / 2.47 A, same as 6 V / 2.0 A), so I_max ≈ duty × V_pack / 3.0 Ω. A fixed duty therefore gives a current (and torque) cap that **falls with pack voltage**: set for 1.0 A at 8.4 V (duty 35.7 %, value 357) it allows only 0.75 A at 6.3 V.
+- **A fixed EEPROM duty clamp = Hinton's "literal −20 %" case, which FAILS.** The "clamp-kept" case (which passes by 0.0007 m/s) needs a constant current cap.
+
+**Implementation I propose (both layers, needs Atlas ack):**
+1. EEPROM Max_Torque_Limit (16) = **357** on the 4 clamped servos: 1.0 A at the 8.4 V full pack, so the cap is safe at power-on and if the controller dies (Atlas's EEPROM requirement).
+2. Control loop rewrites SRAM Torque_Limit (48) each 20 ms tick: duty = 1.0 A × 3.0 Ω / V_pack (Present_Voltage, filtered), clamped to ≤ 1000, so the cap stays ≈ 1.0 A (≈ 0.88 Nm) at any pack voltage = Hinton's "clamp-kept".
+3. EEPROM Protection_Current (28) as a backstop trip **above** the clamp (≈ 1.4 A; unit is reported as 6.5 mA/LSB → ≈ 215, to be bench-confirmed), so a stuck SRAM write cannot reach the BMS trip.
+- Margin is 0.0007 m/s, i.e. none. A 3.0 Ω estimate that is 5 % off moves the cap by 5 %. Bench: one STS3215 on the torque arm at 6.3 / 7.4 / 8.4 V, log Present_Current at each Torque_Limit value, before this is signed.
+
+## Option B servo (6 joints)
+
+Option B (Naoufel 2026-11-22 22:32) = **STS3046 (ST-3046-C001)** on 2 knees, 2 hip pitch, 2 ankles. It is the only option-B candidate in this file. The 4 clamped joints (2 hip_yaw, 2 hip_roll) stay **stock STS3215-C001**, so Hinton's use of the STS3215 line there is correct. Added to the BOM as line 23, PROPOSED, not in the TOTAL. Status of line 2 stays SUPERSEDED-PENDING until Atlas/Chief decide B.
