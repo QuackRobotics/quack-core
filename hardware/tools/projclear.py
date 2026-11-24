@@ -4,11 +4,13 @@ reports the minimum radial clearance between every moving-geom vertex and a Ø12
 Tube: front face centre at (46, y0, z0) mm in trunk_assembly, axis tilted 8 deg down (rear end higher).
 Vertices are subsampled (every Nth unique vertex) -> clearance is an estimate (+-~2 mm), not a CAD proof.
 Usage: python3 projclear.py <robot_dir> [y0_mm ...]"""
-import sys, itertools, numpy as np
+import sys
+import itertools
+import numpy as np
 import xml.etree.ElementTree as ET
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 _argv, sys.argv = sys.argv, sys.argv[:1]  # stlvol runs its CLI loop on import
-from stlvol import load
+from stlvol import load  # noqa: E402 (sys.path set first)
 sys.argv = _argv
 
 def R(q):
@@ -18,7 +20,8 @@ def R(q):
                      [2*(x*z-w*y), 2*(y*z+w*x), 1-2*(x*x+y*y)]])
 
 def axang(ax, a):
-    ax = np.asarray(ax, float); ax /= np.linalg.norm(ax)
+    ax = np.asarray(ax, float)
+    ax /= np.linalg.norm(ax)
     K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
     return np.eye(3) + np.sin(a) * K + (1 - np.cos(a)) * K @ K
 
@@ -40,14 +43,16 @@ def verts(m, step=STEP):
     return cache[m]
 
 def collect(body, Rp, pp, q, out):
-    Rb = Rp @ R(f3(body.get('quat'), '1 0 0 0')); pb = pp + Rp @ f3(body.get('pos'), '0 0 0')
+    Rb = Rp @ R(f3(body.get('quat'), '1 0 0 0'))
+    pb = pp + Rp @ f3(body.get('pos'), '0 0 0')
     j = body.find('joint')
     if j is not None:
         Rb = Rb @ axang(f3(j.get('axis'), '0 0 1'), q.get(j.get('name'), 0.0))
     for g in body.findall('geom'):
         if g.get('mesh'):
             v = verts(g.get('mesh'))
-            Rg = Rb @ R(f3(g.get('quat'), '1 0 0 0')); pg = pb + Rb @ f3(g.get('pos'), '0 0 0')
+            Rg = Rb @ R(f3(g.get('quat'), '1 0 0 0'))
+            pg = pb + Rb @ f3(g.get('pos'), '0 0 0')
             out.append((v @ Rg.T + pg) * 1000)
     for c in body.findall('body'):
         collect(c, Rb, pb, q, out)
@@ -70,7 +75,8 @@ def configs(only):
 
 modes = ['neutral'] + names + ['all']
 for y0, mode in itertools.product(ys, modes):
-    a = np.array([46, y0, z0]); best = (1e9, None)
+    a = np.array([46, y0, z0])
+    best = (1e9, None)
     for q in configs(mode):
         pts = []
         collect(neck, np.eye(3), np.zeros(3), q, pts)

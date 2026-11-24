@@ -1,5 +1,10 @@
 """Identify upstream 'board' mesh: Onshape part metadata + mesh extents vs other electronics."""
-import json, glob, re, struct, os, numpy as np
+import json
+import glob
+import re
+import struct
+import os
+import numpy as np
 D = '/tmp/odm/mini_bdx/robots/open_duck_mini_v2/'
 
 def load(f):
@@ -15,6 +20,7 @@ for f in sorted(glob.glob(D + '*.part')):
     print(f"{os.path.basename(f)[:-5]:32s} doc {d['documentId'][:8]} el {d['elementId'][:8]} '{d['name']}'")
 print()
 for f in ['board', 'bms', 'bno055', 'raspberrypizerow', 'usb_c_charger', 'power_switch']:
-    t = load(D + f + '.stl'); v = t.reshape(-1, 3)
+    t = load(D + f + '.stl')
+    v = t.reshape(-1, 3)
     vol = abs(np.einsum('ij,ij->i', t[:, 0], np.cross(t[:, 1], t[:, 2])).sum() / 6)
     print(f"{f:18s} extents {np.round(np.sort(np.ptp(v, 0)), 4)} vol {vol:.3e}")

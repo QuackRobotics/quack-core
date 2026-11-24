@@ -1,4 +1,6 @@
-import numpy as np, struct, re
+import numpy as np
+import struct
+import re
 D = '/tmp/odm/mini_bdx/robots/open_duck_mini_v2/'
 
 def load(name):
@@ -50,7 +52,8 @@ print('vertex histogram along', 'xyz'[ax], list(zip(np.round(e[:-1], 1), h)))
 def ray_hits(tris, o, d):
     v0, v1, v2 = tris[:, 0], tris[:, 1], tris[:, 2]
     e1, e2 = v1 - v0, v2 - v0
-    p = np.cross(d, e2); det = (e1 * p).sum(1)
+    p = np.cross(d, e2)
+    det = (e1 * p).sum(1)
     ok = np.abs(det) > 1e-9
     inv = np.where(ok, 1 / np.where(ok, det, 1), 0)
     s = o - v0
@@ -64,12 +67,16 @@ def ray_hits(tris, o, d):
 others = {k: v for k, v in parts.items() if k != 'pi'}
 axes = [a for a in range(3) if a != ax]
 for sgn, label in [(-1, '-'), (1, '+')]:
-    d = np.zeros(3); d[ax] = sgn
+    d = np.zeros(3)
+    d[ax] = sgn
     face = lo[ax] if sgn < 0 else hi[ax]
     res = {}
     for a in np.linspace(lo[axes[0]] + 2, hi[axes[0]] - 2, 9):
         for b in np.linspace(lo[axes[1]] + 2, hi[axes[1]] - 2, 5):
-            o = np.zeros(3); o[ax] = face; o[axes[0]] = a; o[axes[1]] = b
+            o = np.zeros(3)
+            o[ax] = face
+            o[axes[0]] = a
+            o[axes[1]] = b
             for k, t in others.items():
                 hts = ray_hits(t, o, d)
                 if hts.size:

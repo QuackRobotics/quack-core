@@ -5,7 +5,7 @@ import sys
 import numpy as np
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 _argv, sys.argv = sys.argv, sys.argv[:1]  # stlvol runs its CLI loop on import
-from stlvol import load, watertight
+from stlvol import load, watertight  # noqa: E402 (sys.path set first)
 sys.argv = _argv
 
 RHO = 1.24  # g/cm3 PLA

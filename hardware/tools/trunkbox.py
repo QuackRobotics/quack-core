@@ -1,10 +1,11 @@
 """Bounding boxes of trunk_assembly geoms (upstream robot.xml b23317a) in the trunk_assembly frame, mm.
 Usage: python3 trunkbox.py <robot_dir>. Reads geom pos/quat, transforms STL vertices (binary/ascii)."""
-import sys, re, numpy as np
+import sys
+import numpy as np
 import xml.etree.ElementTree as ET
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 _argv, sys.argv = sys.argv, sys.argv[:1]  # stlvol runs its CLI loop on import
-from stlvol import load
+from stlvol import load  # noqa: E402 (sys.path set first)
 sys.argv = _argv
 
 def R(q):

@@ -5,7 +5,7 @@ exec(src.split("for k, t in parts.items()")[0])
 exec("def ray_hits" + src.split("def ray_hits")[1].split("others =")[0])
 
 P = np.array([9.9, 79.2, 25.0])  # Luxo's left-wall port
-for k, t in parts.items():
+for k, t in parts.items():  # noqa: F821 (names come from exec of hatfit.py)
     v = t.reshape(-1, 3)
     d = np.linalg.norm(v - P, axis=1)
     i = d.argmin()
@@ -16,7 +16,7 @@ for dx, dz in [(0, 0), (3, 0), (-3, 0), (0, 3), (0, -3)]:
     o = np.array([9.9 + dx, 120.0, 25.0 + dz])
     d = np.array([0, -1.0, 0])
     hits = []
-    for k, t in parts.items():
-        for h in ray_hits(t, o, d):
+    for k, t in parts.items():  # noqa: F821 (names come from exec of hatfit.py)
+        for h in ray_hits(t, o, d):  # noqa: F821 (names come from exec of hatfit.py)
             hits.append((round(120 - h, 1), k))
     print((dx, dz), sorted(hits, reverse=True)[:6])

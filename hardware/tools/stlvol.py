@@ -2,7 +2,11 @@
 Volume = divergence-theorem signed volume; exact only if the mesh is closed, so we also
 check that every edge is shared by exactly two triangles (watertight) and cross-check
 with an independent ray-parity voxel estimate."""
-import sys, hashlib, re, struct, numpy as np
+import sys
+import hashlib
+import re
+import struct
+import numpy as np
 
 def load(f):
     b = open(f, 'rb').read()
@@ -24,7 +28,8 @@ def watertight(t):
 def parity_volume(t, step=0.5):
     """Cast +z rays on an x/y grid; count crossings to get filled length per ray."""
     lo, hi = t.reshape(-1, 3).min(0), t.reshape(-1, 3).max(0)
-    xs = np.arange(lo[0] + step / 2, hi[0], step); ys = np.arange(lo[1] + step / 2, hi[1], step)
+    xs = np.arange(lo[0] + step / 2, hi[0], step)
+    ys = np.arange(lo[1] + step / 2, hi[1], step)
     a, b, c = t[:, 0], t[:, 1], t[:, 2]
     total = 0.0
     for x in xs:

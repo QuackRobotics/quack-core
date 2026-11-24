@@ -1,4 +1,7 @@
-import numpy as np, struct, re, hashlib
+import numpy as np
+import struct
+import re
+import hashlib
 D = '/tmp/odm/print/'
 
 def load(name):
