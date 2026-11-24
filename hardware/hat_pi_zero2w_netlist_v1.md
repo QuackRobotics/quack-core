@@ -188,7 +188,7 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | R36–R38 | 100 Ω 1% 0603 | 3 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | C22, C23 | 100 nF X7R 0603 (U3 VCC1/VCC2) | 2 | **TBD** | **TBD** | — |
 | J9 | 3-pin wire-to-board | 1 | JST SH/GH (**TBD**) | **TBD** | — |
-| D_EYE | Ø5 single-colour TH LED | 2 | **TBD** (colour: Luxo) | **TBD** | off-board, in head |
+| D_EYE | Ø5 warm-white TH LED, clear 55° | 2 (+2 kit spares) | Cree C513A-MSN-CW0Z0231 [C513A rev12] | **TBD** | off-board, in head; pair within 0.1 V at 5 mA (f57293f) |
 | R14, R15 | CPO_FB divider | 2 | 1.00 MΩ / 301 kΩ 0.1% 0603 (PN TBD) | — | values set [3226f] |
 | C1 | 10 µF X5R 10 V | 1 | **TBD** (MLCC) | **TBD** | DC-bias derating check |
 | C3, C3b | 47 µF X5R ≥10 V 1206, low ESR (VOUT ≥ 47 µF [3226f]) | 2 | **TBD** (MLCC) | **TBD** | effective C at 5 V bias must stay ≥ 47 µF total |
