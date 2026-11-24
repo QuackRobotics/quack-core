@@ -9,7 +9,8 @@ All masses are Woz estimates; nothing weighed. Usage: python3 eyerow.py"""
 import numpy as np
 from headrow import BASE, HEADER, OPTIONS, PATH, Y_RIGHT, ballast_for, row, fullinertia, C0
 
-Z_EYE, Z_BULB, Z_LED = -62.51, -55.08, -47.0
+Z_EYE, Z_BULB = -62.51, -55.08
+Z_LED = {40: -49.25, -40: -53.10}  # LED tip at 10.55 mm from disc rear (Luxo, Chief 2026-11-24 15:53); tube mass kept as upper bound
 D_DISC = 29.4
 Z_LEDGE = {40: -59.80, -40: -63.65}  # disc rear face on the ledge, disc extends outward (-z)
 X = 10.35
@@ -39,7 +40,7 @@ def eyelight(final):
         tube = np.pi * (ro**2 - ri**2) * L / 1000 * 1.27 / 2
         t = 2.0 if final else 1.0
         disc = np.pi * (D_DISC / 2)**2 * t / 1000 * (1.19 if final else 1.27)
-        items += [(f"bulb out y{y:+d}", -2.10, (X, y, Z_BULB)), (f"tube+LED in y{y:+d}", tube + 0.3, (X, y, Z_LED)),
+        items += [(f"bulb out y{y:+d}", -2.10, (X, y, Z_BULB)), (f"tube+LED in y{y:+d}", tube + 0.3, (X, y, Z_LED[y])),
                   (f"disc in y{y:+d}", disc, (X, y, Z_LEDGE[y] - t / 2))]
         print(f"   y{y:+d}: tube {tube:.2f} disc {disc:.2f} LED 0.30 -> {tube + disc + 0.3:.2f} g")
     return items

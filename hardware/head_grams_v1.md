@@ -134,7 +134,7 @@ Point-mass deltas on the trained head (Playground `head_assembly` @ f698836 = b9
 ### Eye light net mass (replaces cut #6)
 
 - **Disc:** Ø29.4 in both eyes, seated on the bezel Ø29.6 counterbore ledge (Chief ruling (b) 2026-11-24 15:41, proto, no CAD change, no glue; replaces the Ø25 disc diameter of the 15:06 ruling). Ledge z from print/left_eye.stl / right_eye.stl: left −59.80 (0.75 mm proud, pocket ≈ 3.55 mm), right −63.65 (≈ 4.6 mm proud, pocket ≈ 3.8 mm); the disc rear face sits on the ledge. 0.1 mm radial clearance per side (Ø29.4 in Ø29.6), not toleranced against print shrink; check at first print.
-- **In, per eye:** Cree C513A-MSN + wire 0.3 g (est., not read), tapered PETG tube (half of a straight 1.2 mm wall over 22.35 mm, Ø25 bore), centroid (10.35, ±40, −47), unchanged behind the wall; Ø29.4 diffuser disc as its own point at the ledge (left z −60.3 / right −64.15 proto, −60.8 / −64.65 final). LED-to-disc spacing grows by 2.25 mm left and 6.1 mm right if the LED does not move; that is Luxo's diffusion call and moves the CoM ≤ 0.05 mm. Densities PETG 1.27, PMMA 1.19 g/cm³ are typical values, not datasheet.
+- **In, per eye:** Cree C513A-MSN + wire 0.3 g (est., not read), tapered PETG tube (half of a straight 1.2 mm wall over 22.35 mm, Ø25 bore), centroid at the LED depth: left z −49.25, right −53.10, so the LED tip sits 10.55 mm behind each disc rear face (Luxo diffusion call, Chief 2026-11-24 15:53; was −47 both). Tube mass kept at the 22.35 mm length as an upper bound; LED-mount fit in woz/eyefit/ledfit.log: no clash in z −56..−40; Ø29.4 diffuser disc as its own point at the ledge (left z −60.3 / right −64.15 proto, −60.8 / −64.65 final). LED-to-disc spacing grows by 2.25 mm left and 6.1 mm right if the LED does not move; that is Luxo's diffusion call and moves the CoM ≤ 0.05 mm. Densities PETG 1.27, PMMA 1.19 g/cm³ are typical values, not datasheet.
 - **Out:** both upstream bulb plates, 2.10 g each (solid-PLA STL volume, an upper bound). The bezels stay (Luxo look parts). The upstream glass is not itemised, so its removal is not counted: if the disc replaces it, the real net is lower.
 - **Seat:** closed by ruling (b). The bulb plate stays removed.
 
@@ -145,12 +145,12 @@ Point-mass deltas on the trained head (Playground `head_assembly` @ f698836 = b9
 
 | Row + eye light | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
 |---|---|---|---|---|
-| A 414.2 (proto) | 417.16 | (8.368, −1.702, 22.543) | (+0.21, +2.21, −0.23) | 2.46178e-3 1.68139e-3 1.10308e-3 −8.47526e-6 9.20955e-5 2.25699e-6 |
-| 410.0 (proto), ballast 4.06 g | 413.13 | (8.215, −4.200, 22.892) | (+0.06, −0.29, +0.12) | 2.46295e-3 1.67855e-3 1.10589e-3 −3.90085e-6 9.09004e-5 −3.06232e-6 |
-| 407.4 (proto), ballast 2.93 g | 410.50 | (8.178, −4.200, 22.948) | (+0.02, −0.29, +0.18) | 2.45338e-3 1.67799e-3 1.09663e-3 −3.36325e-6 9.06812e-5 −4.52152e-6 |
-| A 414.2 (final disc) | 418.67 | (8.375, −1.695, 22.234) | (+0.22, +2.21, −0.54) | 2.47527e-3 1.69247e-3 1.10550e-3 −8.48033e-6 9.23510e-5 2.36028e-6 |
-| 410.0 (final disc), ballast 4.16 g | 414.73 | (8.223, −4.200, 22.579) | (+0.07, −0.29, −0.19) | 2.47698e-3 1.68971e-3 1.10876e-3 −3.90306e-6 9.11764e-5 −2.61947e-6 |
-| 407.4 (final disc), ballast 3.02 g | 412.10 | (8.186, −4.200, 22.633) | (+0.03, −0.29, −0.14) | 2.46742e-3 1.68917e-3 1.09950e-3 −3.36546e-6 9.09622e-5 −4.07867e-6 |
+| A 414.2 (proto) | 417.16 | (8.368, −1.702, 22.509) | (+0.21, +2.21, −0.26) | 2.46383e-3 1.68344e-3 1.10308e-3 −8.47526e-6 9.21237e-5 2.01909e-6 |
+| 410.0 (proto), ballast 4.06 g | 413.13 | (8.215, −4.200, 22.858) | (+0.06, −0.29, +0.08) | 2.46501e-3 1.68060e-3 1.10589e-3 −3.90085e-6 9.09308e-5 −3.26472e-6 |
+| 407.4 (proto), ballast 2.93 g | 410.50 | (8.178, −4.200, 22.913) | (+0.02, −0.29, +0.14) | 2.45544e-3 1.68005e-3 1.09663e-3 −3.36325e-6 9.07121e-5 −4.72392e-6 |
+| A 414.2 (final disc) | 418.67 | (8.375, −1.695, 22.201) | (+0.22, +2.21, −0.57) | 2.47731e-3 1.69450e-3 1.10550e-3 −8.48033e-6 9.23791e-5 2.12230e-6 |
+| 410.0 (final disc), ballast 4.16 g | 414.73 | (8.223, −4.200, 22.545) | (+0.07, −0.29, −0.23) | 2.47903e-3 1.69176e-3 1.10876e-3 −3.90306e-6 9.12066e-5 −2.82186e-6 |
+| 407.4 (final disc), ballast 3.02 g | 412.10 | (8.186, −4.200, 22.598) | (+0.03, −0.29, −0.17) | 2.46947e-3 1.69122e-3 1.09950e-3 −3.36546e-6 9.09929e-5 −4.28106e-6 |
 
 - All rows ≤ 419.6 g; tightest is A final disc at 418.67 g (0.93 g margin). Superseded: the 15:20 rows (left Ø20 disc, eye at z −58) and the 15:36 Ø25-disc rows (8d8ce47) are replaced by the tables above.
 - The 441.3 / 442.2 g figures from the 2026-11-24 eye-fit report are withdrawn: they were gross additions (no bulbs out) on the stale 434.6 g baseline.
