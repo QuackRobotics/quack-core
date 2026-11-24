@@ -20,16 +20,21 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
           cargo install --locked cargo-fmt cargo-clippy 2>/dev/null || true
-          pipx install ruff 2>/dev/null || pip install ruff
-          npm install -g prettier markdownlint-cli 2>/dev/null || true
+          pipx install ruff==0.8.6
+          npm install -g prettier 2>/dev/null || true
       - name: Run lint (per language present)
         run: |
           if [ -f Cargo.toml ]; then cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings; fi
-          if [ -f pyproject.toml ] || [ -f requirements.txt ]; then ruff check .; fi
-          if [ -f package.json ]; then npx prettier --check . && npx markdownlint "**/*.md"; fi
+          ruff check .  # every *.py, not only when a pyproject/requirements file exists
+          if [ -f package.json ]; then npx prettier --check .; fi
           if [ -f Dockerfile ]; then hadolint Dockerfile; fi
           if [ -f buf.yaml ]; then buf lint; fi
         shell: bash
+      # Runs on every PR: Markdown is linted whether or not a package.json exists.
+      - name: markdownlint (uses .markdownlint.json)
+        uses: DavidAnson/markdownlint-cli2-action@v25
+        with:
+          globs: '**/*.md'
 
   test-rust:
     name: Test (Rust)
