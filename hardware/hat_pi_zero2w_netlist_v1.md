@@ -88,7 +88,28 @@ PWM via R12/R13; 5V_AUX; GND_AUX.
 
 ### J9: eye LEDs, 3-pin (Luxo eye_anim_constraints @ 9770686 + Chief 2026-11-24: one plain single-colour Ø5 LED per eye, Jewel not in v1)
 
-Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode → R24/R25 (LED current R, value at capture from the chosen LED's Vf; target ≤ 10 mA per LED, Woz default, both eyes ≤ 20 mA, well under Luxo's 0.25 A clamp) → Q1/Q2 drain; Q1/Q2 source GND_PI. Gate pull-down R26/R27 100 kΩ to GND_PI (eyes off while GPIO23/24 float at boot).
+Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode → R24/R25 (**470 Ω 1%**, sized below) → Q1/Q2 drain; Q1/Q2 source GND_PI. Gate pull-down R26/R27 100 kΩ to GND_PI (eyes off while GPIO23/24 float at boot).
+
+> **HARNESS WARNING: wire the eyes to the HAT, NOT the upstream way.** J9 is **common anode**: pin 1 = both LED anodes on 5V_PI_HOLD, pins 2/3 = the left/right cathodes into the low-side FETs. Upstream Open Duck (per Chief) puts the anodes on GPIO23/24 with a common cathode to GND. An eye harness built the upstream way will not light, and its common wire would land on 5V_PI_HOLD. QA: check the J9 pin 1 wire goes to both LED anodes (long leg, round side of the flange) before the first power-up.
+
+**Eye LED: Cree C513A-MSN-CW0Z0231** (Chief 2026-11-24, from Luxo: warm white, target 5 mA, 10 mA hard ceiling). Datasheet read: Cree C513A-WSS/WSN/MSS/MSN, CLD-CT1042 REV 12, `shared/datasheets/cree_C513A_rev12.pdf` (sha256 8959e9f7…94cfb) [C513A rev12].
+
+- Warm white, CCT min 2500 K / typ 2800 K (Luxo asked ~3000 K), 55° viewing angle, Ø5 round, MSN = no standoff, colour bins M2/M3 (I did not map M2/M3 to CCT) [C513A rev12].
+- **Not diffused:** the datasheet never calls it diffused. Luxo's diffused look needs a diffuser in the eye shell (his call), or a diffused warm-white part from a datasheet someone has read. I could not get one: Kingbright's warm-white list has no Ø5 part, and the Mouser, Würth and Lighthouse pages were blocked.
+- Abs. max IF 30 mA, PD 120 mW, VR 5 V. Vf at 20 mA: typ 3.2 / max 4.0 V, voltage bins 2.8–4.0 V, ±0.05 V tolerance [C513A rev12].
+- **Vf at 5 mA (my estimate):** Fig. 1 (typical) reads about 2.85 V at 5 mA against 3.2 V at 20 mA. Shifting the bin limits by that −0.35 V gives **2.40–3.70 V at 5 mA**. That is an extrapolation along the typical curve, not a datasheet limit.
+
+**R24/R25 = 470 Ω.** I = (5V_PI_HOLD − Vf) / 470. The FET drop at ≤ 6 mA is taken as 0 V, which errs high on current.
+
+| Rail case (source) | 5V_PI_HOLD | Typ Vf 2.85 V | Min current (Vf 3.70 V) | Max current (Vf 2.40 V) |
+|---|---|---|---|---|
+| Normal (harness_neck_v1: HAT ≥ 4.99 V, regulator max 5.16 V) | 4.99–5.16 V | 4.8 mA at 5.10 V | **2.7 mA** at 4.99 V | **5.9 mA** at 5.16 V |
+| Backup LDO ([3226f] 4.18–4.51 V, ±28 mV leakage) | 4.15–4.54 V | 3.3 mA at 4.40 V | **1.0 mA** at 4.15 V | **4.6 mA** at 4.54 V |
+
+- Every corner stays under the 10 mA ceiling (worst 5.9 mA, 20% of the 30 mA abs. max). LED dissipation ≤ 5.9 mA × 3.7 V ≈ 22 mW. R dissipation ≤ 16 mW, fine for 0603.
+- The eyes dim on backup, as Chief accepted. At the high-Vf corner they are very dim (1 mA).
+- **QA at kitting:** the Vf bins span 1.2 V, so two random LEDs in one head can differ by about 2× in current. Pair each head's two LEDs by Vf at 5 mA, within 0.1 V, on the bench supply before they go in the harness.
+- **Eye safety:** this is an indicator LED, at ≤ 5.9 mA through a 55° lens behind the eye shell. The datasheet's vision advisory says not to look at an exposed lamp in operation, so the LED is never exposed. I have not done an IEC 62471 assessment.
 
 - **Why a transistor, not direct GPIO:** GPIO load stays at gate leakage only, LED current comes from 5 V not the Pi 3V3 rail, and v1.1 PWM can drive the same FETs. I did not read a Pi GPIO current-limit datasheet, so I am not sizing a direct-drive R against one.
 - **v1:** on/off/blink on the 20 ms tick, plain GPIO writes.
