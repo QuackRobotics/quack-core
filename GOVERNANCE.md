@@ -4,7 +4,8 @@
 
 ## 1. Purpose
 
-This document defines the governance model for the **Quack Robotics** (formerly `quack-core`) organization. It covers the maintainer committee, the RFC process, release cadence, and decision-making authority.
+This document defines the governance model for the **Quack Robotics** (formerly `quack-core`) organization.
+It covers the maintainer committee, the RFC process, release cadence, and decision-making authority.
 
 ---
 
