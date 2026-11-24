@@ -1,145 +1,129 @@
 // SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Joint identities and the policy index order.
+//! Joint index order used by the policy and every HAL array.
 //!
-//! The policy order comes from Open_Duck_Playground f698836: left leg 0-4, head 5-8,
-//! right leg 9-13, antennas 14-15. The upstream MJCF (Open_Duck_Mini b23317a) lists the
-//! antennas between the head and the right leg, so any other source order is remapped
-//! by joint name, never by position.
+//! The order is the Open Duck Playground f698836 actuator order (Chief ruling, pin A,
+//! 2026-11-24): left leg 0-4, head 5-8, right leg 9-13, antennas 14-15. The upstream
+//! Open_Duck_Mini b23317a `robot.xml` lists the antennas at 9-10 instead; that order is
+//! for mechanics/BOM only. Anything arriving in another order (a MuJoCo model, the servo
+//! bus) is mapped by name with [`JointMap::from_names`], never by position.
+
+use std::fmt;
 
 pub const JOINT_COUNT: usize = 16;
-/// Joints driven by the walking policy (serial bus servos); the antennas are not.
+/// The policy drives indices `0..POLICY_JOINT_COUNT`; the two SG90 antennas are not policy outputs.
 pub const POLICY_JOINT_COUNT: usize = 14;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Joint {
-    LeftHipYaw,
-    LeftHipRoll,
-    LeftHipPitch,
-    LeftKnee,
-    LeftAnkle,
-    NeckPitch,
-    HeadPitch,
-    HeadYaw,
-    HeadRoll,
-    RightHipYaw,
-    RightHipRoll,
-    RightHipPitch,
-    RightKnee,
-    RightAnkle,
-    LeftAntenna,
-    RightAntenna,
-}
+pub const NECK_PITCH: usize = 5;
+pub const HEAD_PITCH: usize = 6;
+pub const HEAD_YAW: usize = 7;
+pub const HEAD_ROLL: usize = 8;
 
-/// Policy index order (Playground f698836). `POLICY_ORDER[i]` is the joint at index `i`.
-pub const POLICY_ORDER: [Joint; JOINT_COUNT] = [
-    Joint::LeftHipYaw,
-    Joint::LeftHipRoll,
-    Joint::LeftHipPitch,
-    Joint::LeftKnee,
-    Joint::LeftAnkle,
-    Joint::NeckPitch,
-    Joint::HeadPitch,
-    Joint::HeadYaw,
-    Joint::HeadRoll,
-    Joint::RightHipYaw,
-    Joint::RightHipRoll,
-    Joint::RightHipPitch,
-    Joint::RightKnee,
-    Joint::RightAnkle,
-    Joint::LeftAntenna,
-    Joint::RightAntenna,
+pub const POLICY_ORDER: [&str; JOINT_COUNT] = [
+    "left_hip_yaw",
+    "left_hip_roll",
+    "left_hip_pitch",
+    "left_knee",
+    "left_ankle",
+    "neck_pitch",
+    "head_pitch",
+    "head_yaw",
+    "head_roll",
+    "right_hip_yaw",
+    "right_hip_roll",
+    "right_hip_pitch",
+    "right_knee",
+    "right_ankle",
+    "left_antenna",
+    "right_antenna",
 ];
 
-impl Joint {
-    pub fn name(self) -> &'static str {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum JointMapError {
+    WrongCount { expected: usize, got: usize },
+    UnknownName(String),
+    DuplicateName(String),
+}
+
+impl fmt::Display for JointMapError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Joint::LeftHipYaw => "left_hip_yaw",
-            Joint::LeftHipRoll => "left_hip_roll",
-            Joint::LeftHipPitch => "left_hip_pitch",
-            Joint::LeftKnee => "left_knee",
-            Joint::LeftAnkle => "left_ankle",
-            Joint::NeckPitch => "neck_pitch",
-            Joint::HeadPitch => "head_pitch",
-            Joint::HeadYaw => "head_yaw",
-            Joint::HeadRoll => "head_roll",
-            Joint::RightHipYaw => "right_hip_yaw",
-            Joint::RightHipRoll => "right_hip_roll",
-            Joint::RightHipPitch => "right_hip_pitch",
-            Joint::RightKnee => "right_knee",
-            Joint::RightAnkle => "right_ankle",
-            Joint::LeftAntenna => "left_antenna",
-            Joint::RightAntenna => "right_antenna",
+            Self::WrongCount { expected, got } => {
+                write!(formatter, "expected {expected} joint names, got {got}")
+            }
+            Self::UnknownName(name) => write!(formatter, "unknown joint name {name:?}"),
+            Self::DuplicateName(name) => write!(formatter, "joint name {name:?} appears twice"),
         }
     }
+}
 
-    pub fn from_name(name: &str) -> Option<Joint> {
-        POLICY_ORDER.into_iter().find(|joint| joint.name() == name)
+impl std::error::Error for JointMapError {}
+
+/// Policy index of a joint name, or `None` if the name is not a quack-core joint.
+pub fn policy_index(name: &str) -> Option<usize> {
+    POLICY_ORDER.iter().position(|candidate| *candidate == name)
+}
+
+/// Permutation between an external joint order (by name) and [`POLICY_ORDER`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JointMap {
+    /// `policy_of_external[i]` is the policy index of external slot `i`.
+    policy_of_external: [usize; JOINT_COUNT],
+}
+
+impl JointMap {
+    pub fn from_names(external_names: &[&str]) -> Result<Self, JointMapError> {
+        if external_names.len() != JOINT_COUNT {
+            return Err(JointMapError::WrongCount {
+                expected: JOINT_COUNT,
+                got: external_names.len(),
+            });
+        }
+        let mut policy_of_external = [0; JOINT_COUNT];
+        let mut seen = [false; JOINT_COUNT];
+        for (external_slot, name) in external_names.iter().enumerate() {
+            let index =
+                policy_index(name).ok_or_else(|| JointMapError::UnknownName(name.to_string()))?;
+            if seen[index] {
+                return Err(JointMapError::DuplicateName(name.to_string()));
+            }
+            seen[index] = true;
+            policy_of_external[external_slot] = index;
+        }
+        Ok(Self { policy_of_external })
     }
 
-    /// Index of this joint in the policy order.
-    pub fn policy_index(self) -> usize {
-        POLICY_ORDER
+    pub fn is_identity(&self) -> bool {
+        self.policy_of_external
             .iter()
-            .position(|&joint| joint == self)
-            .expect("POLICY_ORDER lists every Joint")
+            .enumerate()
+            .all(|(slot, index)| slot == *index)
     }
-}
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum NameMapError {
-    WrongCount(usize),
-    Unknown(String),
-    Duplicate(Joint),
-}
-
-/// For a source that names its joints in its own order (MJCF actuators, servo ID table),
-/// returns `policy_index_of[source_index]`.
-pub fn policy_indices_by_name(source_names: &[&str]) -> Result<[usize; JOINT_COUNT], NameMapError> {
-    if source_names.len() != JOINT_COUNT {
-        return Err(NameMapError::WrongCount(source_names.len()));
-    }
-    let mut policy_index_of = [0; JOINT_COUNT];
-    let mut seen = [false; JOINT_COUNT];
-    for (source_index, name) in source_names.iter().enumerate() {
-        let joint =
-            Joint::from_name(name).ok_or_else(|| NameMapError::Unknown(name.to_string()))?;
-        let policy_index = joint.policy_index();
-        if seen[policy_index] {
-            return Err(NameMapError::Duplicate(joint));
+    pub fn to_policy<T: Copy>(&self, external: &[T; JOINT_COUNT]) -> [T; JOINT_COUNT] {
+        let mut policy = *external;
+        for (slot, value) in external.iter().enumerate() {
+            policy[self.policy_of_external[slot]] = *value;
         }
-        seen[policy_index] = true;
-        policy_index_of[source_index] = policy_index;
+        policy
     }
-    Ok(policy_index_of)
+
+    pub fn to_external<T: Copy>(&self, policy: &[T; JOINT_COUNT]) -> [T; JOINT_COUNT] {
+        let mut external = *policy;
+        for (slot, value) in external.iter_mut().enumerate() {
+            *value = policy[self.policy_of_external[slot]];
+        }
+        external
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const PLAYGROUND_F698836: [&str; JOINT_COUNT] = [
-        "left_hip_yaw",
-        "left_hip_roll",
-        "left_hip_pitch",
-        "left_knee",
-        "left_ankle",
-        "neck_pitch",
-        "head_pitch",
-        "head_yaw",
-        "head_roll",
-        "right_hip_yaw",
-        "right_hip_roll",
-        "right_hip_pitch",
-        "right_knee",
-        "right_ankle",
-        "left_antenna",
-        "right_antenna",
-    ];
-
-    /// Actuator order of the upstream MJCF (Open_Duck_Mini b23317a robot.xml).
-    const MJCF_B23317A: [&str; JOINT_COUNT] = [
+    /// Actuator order of upstream Open_Duck_Mini b23317a robot.xml (mechanics/BOM only).
+    const B23317A_ORDER: [&str; JOINT_COUNT] = [
         "left_hip_yaw",
         "left_hip_roll",
         "left_hip_pitch",
@@ -158,63 +142,64 @@ mod tests {
         "right_ankle",
     ];
 
-    fn policy_order_names() -> Vec<&'static str> {
-        POLICY_ORDER.iter().map(|joint| joint.name()).collect()
-    }
-
     #[test]
-    fn policy_order_is_playground_f698836() {
-        assert_eq!(policy_order_names(), PLAYGROUND_F698836);
-    }
-
-    #[test]
-    fn policy_order_is_not_mjcf_b23317a() {
-        assert_ne!(policy_order_names(), MJCF_B23317A);
-        assert_eq!(POLICY_ORDER[9], Joint::RightHipYaw);
-        assert_eq!(POLICY_ORDER[14], Joint::LeftAntenna);
-    }
-
-    #[test]
-    fn walking_policy_joints_exclude_antennas() {
-        assert!(!POLICY_ORDER[..POLICY_JOINT_COUNT].contains(&Joint::LeftAntenna));
-        assert!(!POLICY_ORDER[..POLICY_JOINT_COUNT].contains(&Joint::RightAntenna));
-    }
-
-    #[test]
-    fn mjcf_order_is_remapped_by_name() {
-        let policy_index_of = policy_indices_by_name(&MJCF_B23317A).unwrap();
-        for (source_index, name) in MJCF_B23317A.iter().enumerate() {
-            assert_eq!(PLAYGROUND_F698836[policy_index_of[source_index]], *name);
-        }
-        assert_eq!(policy_index_of[9], 14, "left_antenna");
-        assert_eq!(policy_index_of[11], 9, "right_hip_yaw");
-    }
-
-    #[test]
-    fn name_round_trips() {
-        for joint in POLICY_ORDER {
-            assert_eq!(Joint::from_name(joint.name()), Some(joint));
-        }
-        assert_eq!(Joint::from_name("tail"), None);
-    }
-
-    #[test]
-    fn bad_name_tables_are_rejected() {
+    fn policy_order_groups_match_ruling() {
+        assert!(POLICY_ORDER[0..5].iter().all(|n| n.starts_with("left_")));
         assert_eq!(
-            policy_indices_by_name(&MJCF_B23317A[..15]),
-            Err(NameMapError::WrongCount(15))
+            POLICY_ORDER[NECK_PITCH..=HEAD_ROLL],
+            ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
         );
-        let mut duplicated = MJCF_B23317A;
-        duplicated[15] = "left_knee";
-        assert_eq!(
-            policy_indices_by_name(&duplicated),
-            Err(NameMapError::Duplicate(Joint::LeftKnee))
+        assert!(POLICY_ORDER[9..14].iter().all(|n| n.starts_with("right_")));
+        assert_eq!(POLICY_ORDER[14..16], ["left_antenna", "right_antenna"]);
+    }
+
+    #[test]
+    fn b23317a_order_is_not_policy_order() {
+        let map = JointMap::from_names(&B23317A_ORDER).unwrap();
+        assert!(
+            !map.is_identity(),
+            "b23317a order must be remapped by name, never used as policy order"
         );
-        let mut unknown = MJCF_B23317A;
-        unknown[0] = "tail";
+        assert_ne!(B23317A_ORDER, POLICY_ORDER);
+    }
+
+    #[test]
+    fn b23317a_vector_lands_by_name() {
+        let map = JointMap::from_names(&B23317A_ORDER).unwrap();
+        let external: [usize; JOINT_COUNT] = std::array::from_fn(|slot| slot);
+        let policy = map.to_policy(&external);
+        for (index, name) in POLICY_ORDER.iter().enumerate() {
+            let slot = B23317A_ORDER.iter().position(|n| n == name).unwrap();
+            assert_eq!(policy[index], slot, "{name}");
+        }
+        assert_eq!(map.to_external(&policy), external);
+    }
+
+    #[test]
+    fn policy_order_maps_to_identity() {
+        assert!(JointMap::from_names(&POLICY_ORDER).unwrap().is_identity());
+    }
+
+    #[test]
+    fn rejects_bad_name_lists() {
         assert_eq!(
-            policy_indices_by_name(&unknown),
-            Err(NameMapError::Unknown("tail".to_string()))
+            JointMap::from_names(&POLICY_ORDER[..14]),
+            Err(JointMapError::WrongCount {
+                expected: 16,
+                got: 14
+            })
+        );
+        let mut unknown = POLICY_ORDER;
+        unknown[3] = "left_shin";
+        assert_eq!(
+            JointMap::from_names(&unknown),
+            Err(JointMapError::UnknownName("left_shin".into()))
+        );
+        let mut duplicate = POLICY_ORDER;
+        duplicate[15] = "left_antenna";
+        assert_eq!(
+            JointMap::from_names(&duplicate),
+            Err(JointMapError::DuplicateName("left_antenna".into()))
         );
     }
 }
