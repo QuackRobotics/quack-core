@@ -60,3 +60,16 @@ STS3046, same ratios to rated 1.30 Nm: ≤ 1.30 OK, 1.30–1.59 monitored, > 1.5
 Hinton's reference walk knee RMS 1.60 / 1.76 Nm (sim) is ≈ 3× the STS3215 reject line and just over the STS3046 reject line. On paper neither servo holds that walk's knee RMS continuously; the knee case-temperature bench log decides. Thermal limit: servo case 50 °C under load.
 
 Battery safety (unchanged): 2S P30B, 30 A cell ceiling, BMS trip 28 A nominal, battery bay is a fire-containment zone.
+
+## 6. STS3046 datasheet and knee candidates (Woz 2026-11-24 12:00 Paris, scoping only, nothing ordered)
+**STS3046 PDF** ([FEETECH spec, edition A/0, 2020-06-08](https://www.feetechrc.com/Data/feetechrc/upload/file/20260622/6391772436963747515009746.pdf), read today): input voltage **4-8.4 V** (item 5-7); typical operating voltage 6 V / 7.4 V; stall 32.5 / **40 kg.cm** at 6 / 7.4 V, stall current 2.5 / 3.1 A; rated load 10.5 / **13.5 kg.cm (1.32 Nm)** at 6 / 7.4 V (the wiki website table says 13.3); rated current 1.1 / 1.45 A; Kt 12.5 kg.cm/A; torque off above 70 C; over-current protection when >2 A is sustained (settable). The website table says 6-7.4 V. The PDF covers a full 2S pack (8.4 V); the website does not. The Feetech email of 2026-11-22 (sent, no reply yet) already asks exactly this, so nothing new is sent. Until Feetech answers, the PDF is the higher-revision document we hold, but it is edition A/0 from 2020.
+
+**Knee/hip candidates on the FEETECH TTL bus, rated >= 2.0 Nm (20.4 kg.cm) at 7.4-8.4 V.** Source: FEETECH wiki model pages (copies of feetechrc.com tables, checked by FEETECH 2026-10-02), read today. Prices not read.
+| Model | Family | Rated | Stall | Stall I | Mass | Size A x B x C | vs STS3215 pocket (45.2 x 24.7 x 35, 55 g) |
+|---|---|---|---|---|---|---|---|
+| **ST-3095-C001** | STS | **35 kg.cm (3.43 Nm) @ 8.4 V** | 105 kg.cm @ 8.4 V | 10.5 A @ 8.4 V | 194.5 g | 30 x 65 x 48 mm, 15T spline | **does not fit**; +139.5 g per joint |
+| STS3046 (ST-3046-C001) | STS | 13.5 kg.cm (1.32 Nm) @ 7.4 V | 40 kg.cm | 3.1 A | 89 g | 40 x 20 x 43.05 | fails the 2.0 Nm ask |
+| ST-3250-C001 | STS | 16 kg.cm (1.57 Nm) @ **12 V** | 50 kg.cm @ 12 V | 4.2 A | 74.5 g | 45.22 x 24.72 x 35 (fits) | fails even at 12 V; no 12 V rail |
+| HL-3625-C001 | HLS | 6.2 kg.cm @ 7.4 V | 25 kg.cm | 3.0 A | 55 g | 45.2 x 24.7 x 35 (fits) | fails; HLS memory table, not STS |
+- **Result: only one FEETECH TTL servo, the ST-3095, meets >= 2.0 Nm rated at 8.4 V**, and it doesn't fit the leg. It is 3.5x the mass, and 10.5 A stall per joint would break the 28 A BMS budget (BOM line 8) with 2-4 of them. I didn't find a third that qualifies. The HL-39xx series is 12 V-rated (HL-3930/3935/3950: 35-50 kg.cm stall @ 12 V), so it is out without a 12 V rail.
+- So a servo swap doesn't close the knee gap at 2S. The levers are the gait's knee demand (Atlas/Hinton), the knee gear ratio or a parallel spring (mechanical redesign), or a 3S/12 V servo bus. A 12 V bus reopens the battery spec (7.4 V 2S, BMS 28 A) and is Chief's and Naoufel's call.

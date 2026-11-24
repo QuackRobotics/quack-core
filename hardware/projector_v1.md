@@ -15,7 +15,7 @@ Status: PROPOSED, out of TOTAL. Nothing ordered. Frame = upstream robot.xml b233
 
 ## Final variant
 - 0.5 W class: Cree XP-G3 white on a 10 mm star (fits the Ø10 ID tube), 10 mm optic + gobo (part not chosen), Ø12×50 holster.
-- Driver = no IC: GPIO25 → logic-level N-FET low-side switch, LED + **2× 9.1 Ω 1 W 2512 in series** (18.2 Ω) from 5V_AUX. 100 kΩ pull-down on the gate, so it's off at boot and when the Pi is dead.
+- Driver = no IC: GPIO25 → logic-level N-FET low-side switch, LED + **2× 9.1 Ω 1 W 2512 in series** (18.2 Ω) from 5V_AUX. 100 kΩ gate-to-source pull-down **on the trunk side, at the FET** (Atlas condition 2026-11-24), so it's off at boot, when the Pi is dead, and when the GPIO25 neck conductor breaks or the neck connector is unplugged. GPIO25 also boots pulled low (bank 9–27).
 - Sizing: XP-G3 datasheet gives white Vf @350 mA, 85 °C, typ 2.70 V, max 2.90 V. **No white Vf minimum is published**, so I assume 2.5 V at 150 mA as the low corner (Woz estimate, bench to measure).
   - Max If = (5.16 − 2.5) / 18.2 = 146 mA. Nominal 5.10 V, Vf ~2.6 V → ~137 mA, ≈ 0.36 W in the LED.
   - Resistors in normal running: 0.17 W each. LED-short fault: 5.16 / 18.2 = 0.28 A → 0.73 W each, under 1 W. That's why it's two parts, not one 18 Ω (1.5 W in fault).
@@ -63,3 +63,15 @@ Status: PROPOSED, out of TOTAL. Nothing ordered. Frame = upstream robot.xml b233
 - f698836 open_duck_mini_v2.xml (and _backlash.xml): trunk_assembly and head_assembly have **zero collision geoms**; the only collision class geoms in the file are the 2 foot_bottom_tpu. Neck chain = 10 visual meshes, printed parts only, no servos/electronics. Every STL is a 104-triangle proxy; bounding boxes match b23317a within 0.0-2.7 mm (head_pitch_to_yaw worst).
 - projclear.py on f698836 meshes: centreline +10.0 mm (vs -1.6 mm on b23317a), left shoulder neutral 20.6 mm (vs 17.3), combined worst -3.8 mm (vs -5.6). Less conservative only because the neck-pitch servo and the electronics are missing. A Playground-only sweep would wrongly pass the centreline.
 - Holster CAD: none exists. The Ø12x50 cylinder (lens face x +46, axis 8 deg down, at (46, -45, 115.9)) is the whole envelope; the holster wraps it inside that envelope (3 g budget). The 4 mm clearance table should be built on this cylinder + 1.2 mm print-tolerance margin until a holster is drawn.
+
+## All-vertex rerun (Woz 2026-11-24 12:00 Paris; Atlas found step 7 reads high by up to 2.9 mm)
+`PROJ_STEP=1 python3 tools/projclear.py <b23317a robot dir>` (new env switch, default stays 7). Nominal Ø12x50, no +1.2 mm, same 1-joint and combined grid as 510e662.
+| Case | step 7 (510e662) | all vertices |
+|---|---|---|
+| Centreline, neutral | -1.6 mm | -1.6 mm |
+| Centreline, combined worst | -1.6 mm | **-2.8 mm** (neck -20, pitch -45, yaw +80, roll -30) |
+| Left shoulder, neutral | 17.3 mm | 17.3 mm |
+| Left shoulder, head_pitch alone | 17.3 mm | **13.5 mm** (pitch -45) |
+| Left shoulder, head_roll alone | 17.3 mm | **14.1 mm** (roll -30) |
+| Left shoulder, combined worst | -5.6 mm | **-5.7 mm** (neck 44, pitch -45, yaw -80, roll 30) |
+- Centreline stays rejected (fails at neutral either way). Left shoulder stays; single-joint margins shrink by up to 3.8 mm but stay above 4 mm + 1.2 mm. Atlas's finer 5-degree grid with +1.2 mm (worst -7.1 mm) is the governing table; my coarse grid does not replace it.

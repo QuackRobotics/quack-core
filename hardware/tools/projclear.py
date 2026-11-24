@@ -29,7 +29,10 @@ ys = [float(v) for v in sys.argv[2:]] or [0.0, -45.0]
 root = ET.parse(d + '/robot.xml').getroot()
 neck = [b for b in root.iter('body') if b.get('name') == 'neck_pitch_assembly'][0]
 cache = {}
-def verts(m, step=7):
+STEP = int(__import__('os').environ.get('PROJ_STEP', '7'))  # 1 = all vertices (Atlas: step 7 reads high by up to 2.9 mm)
+
+
+def verts(m, step=STEP):
     if m not in cache:
         t, _ = load(f'{d}/{m}.stl')
         v = np.unique(t.reshape(-1, 3).round(5), axis=0)

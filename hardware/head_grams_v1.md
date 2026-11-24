@@ -93,7 +93,10 @@ Point-mass deltas on the trained head (Playground `head_assembly` @ f698836 = b9
 | 411.2 (A + amp on HAT + header), DROPPED, fails y | 411.2 | (8.33, −1.62, 21.83) | (+0.18, +2.29, −0.94) | 2.47870e-3 1.70584e-3 1.09538e-3 −8.12032e-6 9.25675e-5 −1.20290e-5 |
 | **410.0**: A + header, mic → right wall, amp breakout → right wall, HAT parts + FR4 (6.6 g) → trunk, 3.88 g ballast | 410.02 | (8.205, −4.200, 22.148) | (+0.05, −0.29, −0.62) | 2.48560e-3 1.70356e-3 1.10351e-3 −3.83553e-6 9.15456e-5 −1.55733e-5 |
 | **407.4**: as 410.0, but all HAT mass (8.1 g) → trunk, 2.75 g ballast | 407.39 | (8.167, −4.200, 22.200) | (+0.01, −0.29, −0.57) | 2.47606e-3 1.70304e-3 1.09425e-3 −3.29793e-6 9.13375e-5 −1.70325e-5 |
+| 412.7: A + low-profile header, amp breakout stays right (10, −45, 25) | 412.74 | (8.328, −1.891, 21.863) | (+0.17, +2.02, −0.91) | 2.48115e-3 1.70571e-3 1.09790e-3 −7.76448e-6 9.24883e-5 −1.21425e-5 |
 
+
+- **Cut #4 basis (camera net ≤ +3 g):** the upstream `cam` can't be estimated by STL volume. It's a comment-only part in both Playground b9be205 (`<!-- Part cam -->`, no geom, no mesh) and upstream b23317a robot.xml, and no cam STL exists in `print/` or the assets. Its mass is merged into the 406.607 g head inertial at an Onshape-assigned value I can't read. The upstream BOM buys an unbranded "Raspberry pi camera" (AliExpress, ≈ €4.8), not the SC1223. The SC1223 product brief (RP-008151-DS-1) gives 25 × 24 × 11.5 mm and **no mass**. So cut #4 stays unverified on paper. A bench weigh settles it: SC1223 plus the printed bracket (the bracket by STL volume once Luxo draws it), against the upstream camera weighed or read from Onshape.
 - **Y_RIGHT = −72 mm assumption (410.0 and 407.4 rows):** the amp breakout and the ballast sit at (10, −72, 25), my estimate of the inner right wall, mirrored from the mic wall. Not ray-cast against the head shell. Mic mirrored to (9.9, −74.5, 25). Ballast for y −4.2 is grams = m·(y − (−4.2)) / (−4.2 − Y_RIGHT); a wall 1 mm further in adds ≈0.06 g.
 - Not counted in either row: neck pigtail/connector mass that replaces the board in the head.
 - Hinton's lateral band (via Chief 2026-11-24): Δy ∈ [−1.55, +1.0] mm, absolute y −5.46 … −2.91 mm; aim y −4.2 so the ±0.6 mm centroid uncertainty fits.
@@ -117,5 +120,5 @@ Today the 12-pin JST-GH signal connector carries 11 of 12: SDA, SCL, 2 twist GND
 
 ## Mechanical-green additions (Atlas condition, Chief accepted 2026-11-24)
 - [ ] **Head mass, weighed:** the assembled head (all parts, glue, cables up to the neck connector) on a 0.1 g scale is ≤ trained + 8 g = **≤ 414.6 g**. CAD numbers don't count.
-- [ ] **Head CoM y, measured:** two-point hang or knife-edge balance on the assembled head. The method must resolve y to better than ±0.5 mm, and the result must land inside Hinton's band (absolute y −5.46 … −2.91 mm, head_assembly frame). Record the method, repeat count and spread.
+- [ ] **Head CoM y, measured:** two-point hang or knife-edge balance on the assembled head. The method must resolve y to better than ±0.5 mm. Record the method, repeat count and spread. **WARNING, not a gate** (Chief 2026-11-24): if y lands outside Hinton's band (absolute y −5.46 … −2.91 mm, head_assembly frame), flag it to Chief and Atlas. The gate is Atlas's paired DR drift (median Δheading ≤ +8°/100 s, heading hold on) plus vx. The ±0.5 mm accuracy requirement stays a check.
 - Plan of record: low-profile 40-pin header. The amp-to-HAT cut is dropped (fails the y band, rows above).
