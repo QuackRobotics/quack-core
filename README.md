@@ -1,8 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Quack Robotics contributors
-SPDX-License-Identifier: CC-BY-SA-4.0
--->
-
 # Quack Robotics (quack-core)
 
 **Micro Duck** — A ~42 cm open-source bipedal robot, building on

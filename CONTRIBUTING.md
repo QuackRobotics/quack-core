@@ -1,8 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Quack Robotics contributors
-SPDX-License-Identifier: CC-BY-SA-4.0
--->
-
 # Contributing to Quack Robotics
 
 > Welcome! This guide covers the contribution workflow for all 7 repositories in the `QuackRobotics` organization.

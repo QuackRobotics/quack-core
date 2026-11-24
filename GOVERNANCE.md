@@ -1,8 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Quack Robotics contributors
-SPDX-License-Identifier: CC-BY-SA-4.0
--->
-
 # Quack Robotics Governance
 
 > **Status:** Draft — open for comment until 2026-12-01
