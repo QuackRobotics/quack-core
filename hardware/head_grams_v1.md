@@ -110,39 +110,49 @@ Point-mass deltas on the trained head (Playground `head_assembly` @ f698836 = b9
 - Not counted in either row: neck pigtail/connector mass that replaces the board in the head.
 - Hinton's lateral band (via Chief 2026-11-24): Δy ∈ [−1.55, +1.0] mm, absolute y −5.46 … −2.91 mm; aim y −4.2 so the ±0.6 mm centroid uncertainty fits.
 
-## Correction: eye and bulb positions (Woz 2026-11-24 15:20 Paris)
+## Correction: eye and bulb positions (Woz 2026-11-24, rev. 15:45 Paris)
 
-- **What was wrong.** Cut #1 (right eye) and cut #6 (bulbs) were placed at (9.9, −40, 25) and (10, 0, 30). The eye holes are in the front wall. A circle fit to the head.stl rim (`woz/eyefit/rimfit.py` on razer, 6 slices z −58.8 … −56.3, head_assembly frame) gives Ø20.00 centred (10.35, +40.00) and Ø25.00 centred (10.35, −40.00), rms ≤ 0.006 mm, max − min radius ≤ 0.01 mm.
-- **What the upstream parts are** (STL, `print/`): left_eye and right_eye are bezels with a Ø25 bore (radial r 12.50), 35 × 35 × 4.3 and 40 × 40 × 8.4 mm. bulb.stl is a 35 × 35 × 2 mm plate. Four Ø2 holes sit on a 20 mm square round the left hole and a 25 mm square round the right one.
-- **New positions:** eye (10.35, −40, −58), bulbs (10.35, ±40, −55). The z values are Woz estimates: the parts are not in robot.xml and the Onshape placement is not read. ±6 mm in z moves the head CoM by ≤ 0.06 mm.
-- **Effect:** masses unchanged; CoM z up ≈ 1.2 mm; x and y unchanged within 0.01 mm. `tools/eyerow.py` reproduces the published rows exactly with the old positions, then gives the corrected rows.
+- **Mesh basis.** Shell, bezels and bulbs are the upstream **printed** parts, Open_Duck_Mini b23317a `print/` (head.stl sha1 c50db91ff1). The sim mesh (mini_bdx `open_duck_mini_v2/head.stl`, sha1 e6bdea68de, = quack-sim third_party) is a different shell revision: +12.12 cm³ in print (229.35 vs 217.23), surface p50 0.64 mm / p99 3.24 mm / max 5.4 mm apart, same bounding box (`woz/eyefit/printfit2.py`, `meshcmp.py` on razer). Masses and CoM rows here never used either head shell: the shell is inside the Playground `head_assembly` inertial. Only the eye/bulb positions come from the meshes.
+- **What was wrong.** Cut #1 (right eye) and cut #6 (bulbs) were placed at (9.9, −40, 25) and (10, 0, 30). The eye holes are in the front wall (z −59.05 … −56.05, head_assembly frame).
+- **Eye holes, print/head.stl:** circle fit, 4 slices z −58.8 … −56.5: **both Ø25** (24.98–24.99), centred (10.35, ±40.00), rms ≤ 0.009 mm. The sim mesh has the left hole at Ø20; that is a sim-mesh artefact, not the printed part.
+- **Upstream parts** (print/ STLs are already placed in the head print frame; robot.xml `head` geom transform to head_assembly):
+  - left_eye: bezel, Ø40 OD, 4.3 mm proud (z −63.35 … −59.05), 1.77 g solid PLA, centroid (10.35, +40, −61.05).
+  - right_eye: bezel, Ø45/Ø38/Ø35 stepped OD, 8.4 mm proud (z −67.45 … −59.05), 5.74 g, centroid (10.35, −40, −62.06).
+  - Both bezels: Ø25 bore at the head face, then a **Ø29.6 counterbore** to the front face: left from 0.75 mm, right from ≈ 4.6 mm proud (0.25 mm bins).
+  - bulb: 2 mm plate behind the wall (z −56.05 … −54.05), Ø12 / Ø7.3 central hole, 2.10 g, centroid (10.35, −40, −55.08).
+- **New positions:** cut #1 at (10.35, −40, −62.51) (right bezel out at −62.06, mirrored left in at −61.05, mass-weighted), bulbs (10.35, ±40, −55.08). These now come from the print STLs, not estimates.
+- **Effect:** masses unchanged; CoM z up ≈ 1.2 mm against the old positions; x and y unchanged within 0.01 mm. `tools/eyerow.py` reproduces the published rows with the old positions, then gives the corrected rows.
 
 | Row (corrected) | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
 |---|---|---|---|---|
-| B 421.2 | 421.24 | (8.232, −1.685, 21.782) | (+0.08, +2.22, −0.99) | 2.48212e-3 1.70675e-3 1.09876e-3 −8.37857e-6 8.79616e-5 2.21412e-6 |
-| A 414.2 | 414.24 | (8.354, −1.714, 23.012) | (+0.20, +2.19, +0.24) | 2.44439e-3 1.66868e-3 1.09837e-3 −8.46532e-6 9.17082e-5 1.34109e-6 |
-| 412.7 | 412.74 | (8.322, −1.891, 23.074) | (+0.17, +2.02, +0.30) | 2.44038e-3 1.66813e-3 1.09469e-3 −7.83124e-6 9.14868e-5 9.35099e-8 |
-| 410.0 (3.88 g ballast) | 410.02 | (8.199, −4.200, 23.367) | (+0.04, −0.29, +0.59) | 2.44454e-3 1.66569e-3 1.10030e-3 −3.89654e-6 9.04815e-5 −4.49087e-6 |
-| 407.4 (2.75 g ballast) | 407.39 | (8.161, −4.200, 23.426) | (+0.01, −0.29, +0.65) | 2.43495e-3 1.66511e-3 1.09104e-3 −3.35894e-6 9.02546e-5 −5.95007e-6 |
+| B 421.2 | 421.24 | (8.232, −1.685, 21.825) | (+0.08, +2.22, −0.95) | 2.47915e-3 1.70379e-3 1.09876e-3 −8.37857e-6 8.79234e-5 2.89987e-6 |
+| A 414.2 | 414.24 | (8.354, −1.714, 23.055) | (+0.20, +2.19, +0.28) | 2.44138e-3 1.66567e-3 1.09837e-3 −8.46532e-6 9.16721e-5 2.02632e-6 |
+| 412.7 | 412.74 | (8.322, −1.891, 23.117) | (+0.17, +2.02, +0.34) | 2.43737e-3 1.66512e-3 1.09469e-3 −7.83124e-6 9.14501e-5 7.75544e-7 |
+| 410.0 (3.88 g ballast) | 410.02 | (8.199, −4.200, 23.411) | (+0.04, −0.29, +0.64) | 2.44152e-3 1.66267e-3 1.10030e-3 −3.89654e-6 9.04426e-5 −3.85055e-6 |
+| 407.4 (2.75 g ballast) | 407.39 | (8.161, −4.200, 23.470) | (+0.01, −0.29, +0.70) | 2.43193e-3 1.66209e-3 1.09104e-3 −3.35894e-6 9.02151e-5 −5.30975e-6 |
 
 ### Eye light net mass (replaces cut #6)
 
-- **In, per eye:** Cree C513A-MSN + wire 0.3 g (est., not read), tapered PETG tube (half of a straight 1.2 mm wall over 22.35 mm, disc rear −57.55 to epoxy −35.2), diffuser disc sized to its own hole. Centroid (10.35, ±40, −47). Densities PETG 1.27, PMMA 1.19 g/cm³ are typical values, not datasheet.
+- **Disc:** Ø25 in both eyes (Chief ruling 2026-11-24 15:06, proto, no CAD change). Seat: open, see the last bullet of this list.
+- **In, per eye:** Cree C513A-MSN + wire 0.3 g (est., not read), tapered PETG tube (half of a straight 1.2 mm wall over 22.35 mm, Ø25 bore), Ø25 diffuser disc. Centroid (10.35, ±40, −47). Densities PETG 1.27, PMMA 1.19 g/cm³ are typical values, not datasheet.
 - **Out:** both upstream bulb plates, 2.10 g each (solid-PLA STL volume, an upper bound). The bezels stay (Luxo look parts). The upstream glass is not itemised, so its removal is not counted: if the disc replaces it, the real net is lower.
+- **Seat (open):** a Ø25 disc has no axial stop in the Ø25 bore; the bezel's Ø29.6 counterbore is the upstream seat. If the disc moves to that counterbore, these rows change by about +0.25 g per eye (proto).
 
-| Build | Left Ø20 (g) | Right Ø25 (g) | Pair (g) | Net vs upstream bulbs | Net vs the cut-#6 rows |
+| Build | Left Ø25 (g) | Right Ø25 (g) | Pair (g) | Net vs upstream bulbs | Net vs the cut-#6 rows |
 |---|---|---|---|---|---|
-| Proto, PETG 1.0 mm disc | 1.83 | 2.33 | 4.16 | −0.04 g | +1.96 g |
-| Final, PMMA 2.0 mm disc | 2.18 | 2.87 | 5.05 | +0.85 g | +2.85 g |
+| Proto, PETG 1.0 mm disc | 2.33 | 2.33 | 4.66 | +0.45 g | +2.45 g |
+| Final, PMMA 2.0 mm disc | 2.87 | 2.87 | 5.74 | +1.54 g | +3.54 g |
 
-| Row + eye light (proto) | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
+| Row + eye light | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
 |---|---|---|---|---|
-| A 414.2 | 416.20 | (8.363, −1.753, 22.725) | (+0.21, +2.15, −0.05) | 2.45442e-3 1.67564e-3 1.10145e-3 −8.43289e-6 9.19457e-5 1.72898e-7 |
-| 410.0, ballast 3.71 g | 411.81 | (8.208, −4.200, 23.074) | (+0.05, −0.29, +0.30) | 2.45381e-3 1.67274e-3 1.10254e-3 −3.89254e-6 9.07395e-5 −5.38935e-6 |
-| 407.4, ballast 2.58 g | 409.18 | (8.171, −4.200, 23.131) | (+0.02, −0.29, +0.36) | 2.44423e-3 1.67218e-3 1.09328e-3 −3.35494e-6 9.05173e-5 −6.84855e-6 |
-| 410.0 final disc, ballast 3.65 g | 412.64 | (8.212, −4.200, 22.922) | (+0.06, −0.29, +0.15) | 2.45929e-3 1.67712e-3 1.10364e-3 −3.89110e-6 9.08735e-5 −5.68405e-6 |
-| 407.4 final disc, ballast 2.52 g | 410.01 | (8.175, −4.200, 22.978) | (+0.02, −0.29, +0.21) | 2.44972e-3 1.67657e-3 1.09438e-3 −3.35350e-6 9.06538e-5 −7.14325e-6 |
+| A 414.2 (proto) | 416.69 | (8.366, −1.704, 22.686) | (+0.21, +2.20, −0.09) | 2.45464e-3 1.67501e-3 1.10231e-3 −8.47365e-6 9.19775e-5 2.28847e-6 |
+| 410.0 (proto), ballast 4.03 g | 412.62 | (8.212, −4.200, 23.036) | (+0.06, −0.29, +0.26) | 2.45563e-3 1.67213e-3 1.10498e-3 −3.90015e-6 9.07731e-5 −3.18421e-6 |
+| 407.4 (proto), ballast 2.90 g | 409.99 | (8.175, −4.200, 23.093) | (+0.02, −0.29, +0.32) | 2.44605e-3 1.67156e-3 1.09572e-3 −3.36255e-6 9.05516e-5 −4.64341e-6 |
+| A 414.2 (final disc) | 417.78 | (8.371, −1.699, 22.504) | (+0.22, +2.21, −0.27) | 2.46167e-3 1.68030e-3 1.10406e-3 −8.47732e-6 9.21278e-5 2.41750e-6 |
+| 410.0 (final disc), ballast 4.10 g | 413.78 | (8.218, −4.200, 22.852) | (+0.06, −0.29, +0.08) | 2.46303e-3 1.67746e-3 1.10705e-3 −3.90175e-6 9.09356e-5 −2.85467e-6 |
+| 407.4 (final disc), ballast 2.97 g | 411.15 | (8.181, −4.200, 22.908) | (+0.03, −0.29, +0.14) | 2.45346e-3 1.67691e-3 1.09780e-3 −3.36415e-6 9.07171e-5 −4.31387e-6 |
 
+- Superseded: the 15:20 rows (left Ø20 disc, eye at z −58) are replaced by the tables above.
 - The 441.3 / 442.2 g figures from the 2026-11-24 eye-fit report are withdrawn: they were gross additions (no bulbs out) on the stale 434.6 g baseline.
 - Nothing is weighed. A bench weigh of the bulb plates and the printed tube settles the net.
 

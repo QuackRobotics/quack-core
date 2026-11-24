@@ -1,13 +1,14 @@
 """Eye-position correction + eye-light net mass rows (Woz 2026-11-24). Point masses on headrow.py.
-Fixes head_grams_v1 l.73: eye cut and bulbs were placed at (9.9, -40, 25) and (10, 0, 30), but the
-head.stl eye holes are Ø20 (y +40) / Ø25 (y -40), both centred (10.35, ±40), front wall z -59.05..-56.1
-(circle fit, woz/eyefit/rimfit.log). Upstream eye bezels and bulb plates sit on that wall.
-Z_EYE / Z_BULB are Woz estimates (Onshape placement not read; the parts are not in robot.xml).
+Fixes head_grams_v1 l.73: eye cut and bulbs were placed at (9.9, -40, 25) and (10, 0, 30). Basis is the
+upstream printed shell b23317a print/head.stl: both eye holes Ø25 centred (10.35, ±40), front wall
+z -59.05..-56.05 (woz/eyefit/printfit2.log). Z_EYE = cut #1 point (right bezel out at -62.06, mirrored left
+in at -61.05, mass-weighted); Z_BULB = bulb.stl centroid; both from the print STLs in the head_assembly frame.
+Disc Ø25 in both eyes (Chief 2026-11-24 15:06).
 All masses are Woz estimates; nothing weighed. Usage: python3 eyerow.py"""
 import numpy as np
 from headrow import BASE, HEADER, OPTIONS, PATH, Y_RIGHT, ballast_for, row, fullinertia, C0
 
-Z_EYE, Z_BULB, Z_LED = -58.0, -55.0, -47.0
+Z_EYE, Z_BULB, Z_LED = -62.51, -55.08, -47.0
 X = 10.35
 MIC_R = OPTIONS["A mic to right wall (mirror)"]
 AMP_WALL = [("amp breakout off y -45", -2, (10, -45, 25)), ("amp breakout at right wall", 2, (10, Y_RIGHT, 25))]
@@ -30,7 +31,7 @@ def eyelight(final):
     """Replace cut 6 by: both upstream bulbs out (solid-PLA STL upper bound 2.10 g each),
     LED + wire 0.3 g + tapered PETG tube (half the straight tube) + disc in, per eye."""
     items = []
-    for y, bore in ((40, 20.0), (-40, 25.0)):
+    for y, bore in ((40, 25.0), (-40, 25.0)):
         ri, ro, L = bore / 2, bore / 2 + 1.2, 22.35  # disc rear -57.55 .. epoxy -35.2
         tube = np.pi * (ro**2 - ri**2) * L / 1000 * 1.27 / 2
         disc = np.pi * ri**2 * (2.0 if final else 1.0) / 1000 * (1.19 if final else 1.27)
