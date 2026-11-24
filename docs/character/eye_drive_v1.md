@@ -45,7 +45,7 @@ The driver and circuit are not chosen yet. Woz picks them within these constrain
 - If the LEDs hang directly off the GPIOs, keep each well under the pin's drive limit with a sized series resistor; use
   a transistor for more brightness.
 
-### Chosen eye LED and diffuser (Woz HAT PR #8, `f57293f`)
+### Chosen eye LED and diffuser (Woz HAT PR #8, `f57293f`; disc fit `3fb2e91`)
 
 Woz picked the LED; Luxo accepted it on 2026-11-24. The diffuser and light tube below are design only.
 
@@ -56,17 +56,24 @@ Woz picked the LED; Luxo accepted it on 2026-11-24. The diffuser and light tube 
 | `eye_led_lens` | 55° (2θ½), clear | not diffused, so the diffuser lives in the eye shell |
 | `eye_led_series_ohm` | 470 | 2.7-5.9 mA (4.8 typ) on normal power, 1.0-4.6 mA on backup; low backup brightness is accepted |
 | `eye_led_pairing_v` | 0.1 | both eyes in a head are paired within 0.1 V Vf at kitting |
-| `eye_diffuser_position` | one disc per Ø25 eye hole, front face set back 0.5 mm | head link z −59.05, centred on (10.34, ±40) |
+| `eye_diffuser_position` | one Ø29.4 disc per eye, seated on the bezel counterbore ledge (Woz `3fb2e91`) | disc back at head link z −59.80 (left, y +40) and −63.65 (right, y −40), centred on (10.34, ±40) |
 | `eye_diffuser_proto` | natural or white PETG, 1.0 mm, 100% infill, concentric | prototype |
 | `eye_diffuser_final` | opal (white translucent) cast PMMA, 2 mm, laser-cut | final |
 | `eye_diffuser_thickness_mm` | to be picked by eye from a 0.8 / 1.0 / 1.2 mm test print | no transmission figures are known for these materials |
-| `eye_led_to_diffuser_mm` | 10-12, LED dome tip to disc back, on axis | **pending Woz fit/mass check**; gives a ~Ø10 bright core fading to the rim |
-| `eye_light_tube` | opaque tube LED to disc, white inside, black outside | **pending Woz fit/mass check**; keeps light out of the other eye, the shell and the camera/projector paths |
+| `eye_led_to_diffuser_mm` | 10.55, EQUAL in both eyes, LED dome tip to disc back, on axis (inside the 10-12 spec) | **pending Woz fit/mass check**; gives a ~Ø11 bright core fading to the rim |
+| `eye_led_tip_z_mm` | left −49.25, right −53.10 (head link z) | the LED mounts are asymmetric: the LEDs sit 3.85 mm apart in depth so the gaps stay equal; **pending Woz fit/mass check**; CoM effect ≤ 0.05 mm (Woz) |
+| `eye_light_tube` | opaque tube LED to disc, white inside, black outside; left and right lengths differ with the LED depth | **pending Woz fit/mass check**; no bare LED in view; keeps light out of the other eye, the shell and the camera/projector paths |
 
 - Brightness: at 4.8 mA the LED gives roughly a quarter of its 3000-12000 mcd (20 mA) rating. This is a linear-scaling
   estimate, not checked against the datasheet's current curve. The diffuser is there to stop glare; if the eye is still
   too bright, use a thicker disc, not a different resistor.
-- Both eyes use the same disc and the same depth, so the 0.1 V pairing still gives matching eyes.
+- Both eyes use the same disc and the same LED-to-disc gap (10.55 mm), so the 0.1 V pairing and one shared 470 Ω
+  (4.8 mA typ) still give matching eyes. What differs is the LED depth, not the gap.
+- Why the LEDs move (accepted by Chief 2026-11-24 for proto): with both LEDs left at z −47 the gaps would be 12.80 /
+  16.65 mm, so the right eye would be ~0.59× as bright, (12.80/16.65)², with a ~Ø17 spot against ~Ø13 on the left.
+  An uneven bezel reads as a quizzical look; an uneven glow reads as a wink or a fault. Matching by current would
+  need ~8.2 mA on the right (over the 5 mA target, under the 10 mA ceiling), break the shared 470 Ω pairing and
+  still leave the spot sizes different.
 
 ### If the Jewel is approved later
 
