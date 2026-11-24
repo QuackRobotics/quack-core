@@ -1,0 +1,24 @@
+<!-- SPDX-FileCopyrightText: 2026 Quack Robotics contributors -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" font-family="sans-serif" font-size="11">
+<rect width="100%" height="100%" fill="white"/>
+<text x="10" y="16" font-weight="bold">Shoulder projector scoping (NOT v1 GLB): side view left, top view right. mm, v1.8 neutral</text>
+<rect x="45.4" y="153.8" width="180.0" height="115.8" fill="#eee" stroke="#555"/>
+<rect x="94.9" y="51.7" width="180.0" height="47.8" fill="#f6f6f6" stroke="#555"/>
+<rect x="171.4" y="99.5" width="27.0" height="77.8" fill="#ddd" stroke="#555"/>
+<rect x="171.4" y="141.6" width="54.0" height="11.3" fill="#f99" stroke="#c00"/>
+<line x1="225.4" y1="147.3" x2="765.4" y2="215.6" stroke="#c00" stroke-dasharray="4 3"/>
+<line x1="225.4" y1="147.3" x2="765.4" y2="305.2" stroke="#f80" stroke-dasharray="4 3"/>
+<line x1="225.4" y1="147.3" x2="765.4" y2="130.3" stroke="#f80" stroke-dasharray="4 3"/>
+<line x1="40.0" y1="400.0" x2="778.0" y2="400.0" stroke="black"/>
+<text x="49.0" y="43.6" fill="black">head shell 371-430 (overhangs trunk)</text>
+<text x="238.0" y="132.7" fill="#c00">projector D14x60, lens x=+46, h=312, tilt -8 deg</text>
+<text x="328.0" y="221.8" fill="#f80">+-10 deg body pitch envelope (Atlas sets real limit)</text>
+<rect x="574.0" y="184.0" width="132.0" height="200.0" fill="#eee" stroke="#555"/>
+<circle cx="640.0" cy="229" r="119" fill="none" stroke="#999" stroke-dasharray="3 3"/>
+<rect x="612.4" y="214.0" width="55.2" height="30.0" fill="#ddd" stroke="#555"/>
+<rect x="577.6" y="184.0" width="16.8" height="60.0" fill="#f99" stroke="#c00"/>
+<text x="508.0" y="155.0" fill="black">fwd +x (up), left = -z</text>
+<text x="508.0" y="410.0" fill="black">dashed: head footprint above it</text>
+<text x="568.0" y="170.0" fill="#c00">left shoulder z=-45</text>
+</svg>
