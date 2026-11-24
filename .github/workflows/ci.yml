@@ -20,16 +20,21 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
           cargo install --locked cargo-fmt cargo-clippy 2>/dev/null || true
-          pipx install ruff 2>/dev/null || pip install ruff
-          npm install -g prettier markdownlint-cli 2>/dev/null || true
+          pipx install ruff==0.8.6
+          npm install -g prettier 2>/dev/null || true
       - name: Run lint (per language present)
         run: |
           if [ -f Cargo.toml ]; then cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings; fi
-          if [ -f pyproject.toml ] || [ -f requirements.txt ]; then ruff check .; fi
-          if [ -f package.json ]; then npx prettier --check . && npx markdownlint "**/*.md"; fi
+          ruff check .  # every *.py, not only when a pyproject/requirements file exists
+          if [ -f package.json ]; then npx prettier --check .; fi
           if [ -f Dockerfile ]; then hadolint Dockerfile; fi
           if [ -f buf.yaml ]; then buf lint; fi
         shell: bash
+      # Runs on every PR: Markdown is linted whether or not a package.json exists.
+      - name: markdownlint (uses .markdownlint.json)
+        uses: DavidAnson/markdownlint-cli2-action@v25
+        with:
+          globs: '**/*.md'
 
   test-rust:
     name: Test (Rust)
@@ -79,6 +84,7 @@ jobs:
         if: ${{ hashFiles('**/package.json') != '' }}
 
   # Sim gate: run the upstream walking policy in MuJoCo (sim/sim_gate.py).
+  # hashFiles() is only allowed in step-level if:, so each step is guarded.
   sim-gate:
     name: Sim Gate (MuJoCo walk test)
     runs-on: ubuntu-24.04
@@ -86,28 +92,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         with:
           python-version: '3.11'  # mujoco 3.2.* has no wheel for newer runner Pythons
       - name: Install MuJoCo + Python deps
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
           pip install --require-hashes -r sim/requirements.lock.txt
       - name: Record sim environment (python, mujoco, onnxruntime, numpy, lockfile hash)
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: |
           python -c 'import platform, mujoco, onnxruntime, numpy; print("python", platform.python_version()); print("mujoco", mujoco.__version__); print("onnxruntime", onnxruntime.__version__); print("numpy", numpy.__version__)' | tee sim-env.txt
           echo "lockfile_sha256 $(sha256sum sim/requirements.lock.txt | cut -d' ' -f1)" | tee -a sim-env.txt
           pip freeze --all > sim-pip-freeze.txt
       - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         with:
           name: sim-env
           path: |
             sim-env.txt
             sim-pip-freeze.txt
       - name: Fetch pinned upstream assets (sha256-verified)
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: bash sim/fetch_upstream.sh upstream
       - name: Sim gate - walk 10 s at 0.15 m/s without falling, >= 0.5 m forward
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: python sim/sim_gate.py --upstream-dir upstream --cmd-x 0.15 --min-progress 0.5
       - name: Negative control - zero-action policy must FAIL the gate
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: |
           set +e
           python sim/sim_gate.py --upstream-dir upstream --cmd-x 0.15 --min-progress 0.5 --sabotage zero-action
