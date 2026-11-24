@@ -45,6 +45,29 @@ The driver and circuit are not chosen yet. Woz picks them within these constrain
 - If the LEDs hang directly off the GPIOs, keep each well under the pin's drive limit with a sized series resistor; use
   a transistor for more brightness.
 
+### Chosen eye LED and diffuser (Woz HAT PR #8, `f57293f`)
+
+Woz picked the LED; Luxo accepted it on 2026-11-24. The diffuser and light tube below are design only.
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `eye_led_part` | Cree C513A-MSN-CW0Z0231 | datasheet CLD-CT1042 rev12 (`/home/atlas/shared/datasheets/`) |
+| `eye_led_cct_k` | 2800 typ, 2500 min | warm white; accepted in place of the ~3000 K first asked for |
+| `eye_led_lens` | 55° (2θ½), clear | not diffused, so the diffuser lives in the eye shell |
+| `eye_led_series_ohm` | 470 | 2.7-5.9 mA (4.8 typ) on normal power, 1.0-4.6 mA on backup; low backup brightness is accepted |
+| `eye_led_pairing_v` | 0.1 | both eyes in a head are paired within 0.1 V Vf at kitting |
+| `eye_diffuser_position` | one disc per Ø25 eye hole, front face set back 0.5 mm | head link z −59.05, centred on (10.34, ±40) |
+| `eye_diffuser_proto` | natural or white PETG, 1.0 mm, 100% infill, concentric | prototype |
+| `eye_diffuser_final` | opal (white translucent) cast PMMA, 2 mm, laser-cut | final |
+| `eye_diffuser_thickness_mm` | to be picked by eye from a 0.8 / 1.0 / 1.2 mm test print | no transmission figures are known for these materials |
+| `eye_led_to_diffuser_mm` | 10-12, LED dome tip to disc back, on axis | **pending Woz fit/mass check**; gives a ~Ø10 bright core fading to the rim |
+| `eye_light_tube` | opaque tube LED to disc, white inside, black outside | **pending Woz fit/mass check**; keeps light out of the other eye, the shell and the camera/projector paths |
+
+- Brightness: at 4.8 mA the LED gives roughly a quarter of its 3000-12000 mcd (20 mA) rating. This is a linear-scaling
+  estimate, not checked against the datasheet's current curve. The diffuser is there to stop glare; if the eye is still
+  too bright, use a thicker disc, not a different resistor.
+- Both eyes use the same disc and the same depth, so the 0.1 V pairing still gives matching eyes.
+
 ### If the Jewel is approved later
 
 The Jewel does not use GPIO23/24: SPI on GPIO10 through a 74AHCT1G125 on 5V_AUX, 330 Ω series resistor, local
