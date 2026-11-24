@@ -44,3 +44,39 @@ If (2) drifts and (1) doesn't, cut #2 or a right-side balance placement matters 
 
 ## Next
 Hinton: the threshold rows and the two CoM rows. Luxo: #1, #5, #6. Woz: re-derive hold-up for #2 before it's proposed for the BOM. Nothing changes the BOM until Chief rules.
+
+## v2 after Hinton's threshold rows (Woz 2026-11-24 11:05 Paris, via Chief)
+Chief's provisional budget: head ≤ +13 g over trained (≤ ≈419.6 g). Playground 968b18de has the Waveshare board in the trunk only, so cut #7 = 0 g.
+
+**Correction: the realistic case no longer fits.** Without #7 it is 438.6 − 15.4 = **423.2 g (+16.6 g), over budget by 3.6 g.**
+
+| Step | Cut | Δ | Head | Over trained | CoM (mm) | Basis |
+|---|---|---|---|---|---|---|
+| start | Option C, cam net +10, HAT+caps, amp+mic | | 438.6 | +32.0 | (8.31, −1.55, 20.44) | head_layout_v1 |
+| 1 | right eye = mirrored left | −3.97 | 434.6 | +28.0 | (8.30, −1.20, 20.40) | STL volume |
+| 2 | 2× BCAP0010 to trunk (hold-up e863193, needs 0.21 s sync bench) | −6.2 | 428.4 | +21.8 | (8.24, −1.90, 20.61) | catalogue |
+| 3 | HAT FR4 1.6 → 1.0 mm | −2.2 | 426.2 | +19.6 | (8.19, −2.15, 20.68) | FR4 est. |
+| 5 | speaker stand → ring clamp (low end) | −3.0 | 423.2 | +16.6 | (8.18, −1.67, 20.66) | est. |
+| 6 | bulb carriers → glued LED pad (low end) | −2.0 | 421.2 | +14.6 | (8.17, −1.68, 20.61) | est. |
+| 4 | CM3 bracket held to camera net ≤ +3 g (was +10 allowance) | −7.0 | **414.2** | **+7.6** | (8.29, −1.70, 21.82) | needs upstream cam mass |
+
+- Path to ≤ 419 g with margin: steps 1–6 plus #4 → ≈414 g, 5.4 g under the 419.6 g budget. Without #4 the best is 421.2 g (fails by 1.6 g).
+- #4 is the deciding line. It depends on the upstream `cam` mass inside the 45.6 g package, which is not in the XML; someone with Onshape access must read it. If the CM3 + bracket can't come in ≤ cam + 5.5 g, the head fails the budget.
+- Small extras, not counted: amp breakout merged onto the HAT (≈ −1.5 g est.), low-profile 40-pin header instead of a stacking header (≈ −1.5 g est.).
+- CoM positions of cuts are Woz estimates: eye (9.9, −40, 25), caps (12, 47, 6), speaker stand (10.1, −70, 24), bulbs (10, 0, 30), camera (1, 0, −51).
+
+### Where the extra grams sit (+32 g, 438.6 case)
+| Item | Δ | Position (head_assembly, mm) |
+|---|---|---|
+| CM3 + bracket net | +10 (0…+10) | (1, 0, −51) |
+| HAT + 2 caps | +18 | (17, 47, 6) |
+| amp + mic, left wall | +4 | (9.9, 79.2, 25) |
+| **Itemised centroid** | **+32** | **(11.1, 36.3, −9.4)** |
+| Implied by 406.6 → 438.6 CoM | +32 | (10.3, 28.4, −9.2) |
+
+Hinton's (10.3, +38.1, −1.6) matches in x, is 2–10 mm further +y and ≈8 mm higher in z. The 1.8–8 mm gap between my two rows is rounding in the published CoM values. Recommend the final candidate (414.2 g, CoM above) as a full-body row, not a point mass.
+
+### Board masses (nothing weighed)
+- Waveshare Bus Servo Adapter (A): 16 g, Waveshare product page. Not bought; our trunk IMU-to-servo board replaces it. Its mass in Playground's 0.698526 kg trunk: Hinton can read it; I have not.
+- Our trunk IMU-to-servo board: not laid out, no mass.
+- Zero Robot HAT (head): ≈11.8 g at 1.6 mm (FR4 5.8 + header 3 + parts 3), ≈9.6 g at 1.0 mm. Woz estimates.
