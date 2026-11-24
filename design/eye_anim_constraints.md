@@ -2,6 +2,7 @@
 SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
+
 # Eye animation constraints (Jewel option, Chief/Atlas 2026-11-23 ~10:20)
 
 Status: Jewel (Adafruit #2226) under scoping; plain Ø5 TH eyes are default until Woz + Atlas sign off.

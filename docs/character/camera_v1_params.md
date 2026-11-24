@@ -2,6 +2,7 @@
 SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
+
 # Camera v1 behaviour parameters (Luxo, draft v0.1, 2026-11-23)
 
 Companion to `camera_v1_proposal.md` (accepted as draft by Chief 01:08). All values are starting defaults for tuning,
@@ -81,8 +82,8 @@ keeps running.
 
 ## Camera window v2 (accepted: Chief 2026-11-23 ~10:12, Woz building to it 10:22)
 
-Replaces the v1 window (Ø10 bezel, lens opening ≤ Ø4, lens 2 mm recessed). Reason: BOM line 17 / Woz b9e0bca, CM3 lens
-barrel Ø5.75.
+Replaces the v1 window (Ø10 bezel, lens opening ≤ Ø4, lens 2 mm recessed). Reason: BOM line 17 / Woz b9e0bca, CM3
+lens barrel Ø5.75.
 Frame: head_assembly / URDF head link, mm, +x up, −z forward. Front face z = −59.05.
 Assumes CM3 standard lens (66° H, 41° V, 75° diag). The Wide variant (120° diag) needs a different window.
 
@@ -101,10 +102,10 @@ With 0.125 mm of radial clearance, any recess deeper than about 0.16 mm vignette
 0.77).
 Check of Woz's 10.4 option: 5.75 + 2·3·tan 37.5° = 10.35 mm, so it agrees with the 75° diagonal.
 
-Beak keep-out x ≤ −2.9 − 0.096·d: still holds. The bottom barrel edge is at x −2.78 at the face, so the line has 0.12 mm
-of margin. v1 has no beak, so nothing crosses it.
-Head CoM: the window centre stays at x = 0 (inside x 0…−2) around the camera mount point (1, 0, −51); the ~0.06 g change
-leaves the head CoM at about (8.29, −1.20, 21.20) (Chief, 09:53).
+Beak keep-out x ≤ −2.9 − 0.096·d: still holds. The bottom barrel edge is at x −2.78 at the face, so the line
+has 0.12 mm of margin. v1 has no beak, so nothing crosses it.
+Head CoM: the window centre stays at x = 0 (inside x 0…−2) around the camera mount point (1, 0, −51); the ~0.06 g
+change leaves the head CoM at about (8.29, −1.20, 21.20) (Chief, 09:53).
 
 ## Camera window v2.1 (Chief 2026-11-24 10:58)
 

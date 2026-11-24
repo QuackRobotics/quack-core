@@ -2,6 +2,7 @@
 SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
+
 # Sound v1 (Luxo, draft v0.2, 2026-11-23)
 
 Companion to `camera_v1_params.md`. Naoufel decisions (via Chief 02:18 and 02:22): v1 has audio, the upstream speaker +
@@ -136,7 +137,7 @@ opposite side wall, mirroring the grille, as the duck's other "ear".
 | Mic port centre | (36, 79.2, 139) | (9.9, +79.2, 25.0) |
 | Port | through-hole `mic_port_d_mm` 1.0, MEMS mic sealed to the wall with a gasket so sound inside the head does not leak in | same |
 
-The left side wall there is solid (ray-cast at 0.5 mm, no openings in x 14…62, z 118…162; wall y 71…88, sloped). The
-port is the full head width (about 158 mm) from the speaker grille, 66 mm or more behind the face, so it stays clear of
-the projector/eyes/camera column and reads as nothing on the face. Woz to confirm the inside is clear of the head servo
-and the antenna SG90s, which are the main noise sources for the mic.
+The left side wall there is solid (ray-cast at 0.5 mm, no openings in x 14…62, z 118…162; wall y 71…88, sloped).
+The port is the full head width (about 158 mm) from the speaker grille, 66 mm or more behind the face, so it stays clear
+of the projector/eyes/camera column and reads as nothing on the face. Woz to confirm the inside is clear of the head
+servo and the antenna SG90s, which are the main noise sources for the mic.
