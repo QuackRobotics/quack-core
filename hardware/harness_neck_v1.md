@@ -9,7 +9,7 @@ The Pi Zero 2W, the Zero Robot HAT (with the LTC3226 and supercaps) and the came
 | Bundle | Conductors | Gauge | Load | Drop (Woz calc, ~1 m round trip) |
 |---|---|---|---|---|
 | PI 5 V pair | 5V_PI, GND_PI | 18 AWG silicone | Pi 1.5 A + camera 0.30 A + LTC3226 charge 0.36 A = 2.16 A | ~21 mΩ, 0.045 V |
-| AUX 5 V pair | 5V_AUX, GND_AUX | 20 AWG silicone | 2× SG90 1.5 A + MAX98357A 1.26 A = 2.76 A peak (audio is IN for v1) | ~33 mΩ, 0.09 V |
+| AUX 5 V pair | 5V_AUX, GND_AUX | 20 AWG silicone | 2× SG90 1.5 A + MAX98357A 1.26 A = 2.76 A peak (audio is IN for v1). 2026-11-24: power basis gives 1.51 A at 0 dBFS → 3.01 A bench-only peak; 1.60 A at the −12 dBFS cap | ~33 mΩ, 0.09 V |
 | I²C (BNO055) | SDA+GND, SCL+GND twisted; 3V3 | 26–28 AWG | ~12 mA | n/a |
 | Foot contacts | GPIO22, GPIO27, GND | 26–28 AWG | µA | n/a; 1 kΩ + 100 nF at the Pi |
 | STS bus to head servos | V_pack, GND, DATA | per upstream | head servos | n/a |

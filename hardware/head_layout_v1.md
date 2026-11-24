@@ -95,7 +95,7 @@ Woz 2026-11-23 03:30. Source for position: upstream `print/speaker_stand.stl` an
 - The speaker and both printed parts are already in Playground's 406.6 g head (`full_speaker`, `speaker_interface`, `speaker_stand`). Only the amp is new mass.
 - **Clearances:** Pi + HAT at y +31.8…+63 (opposite side, > 60 mm). Camera board/bracket z ≤ −47 (> 38 mm). Projector LED at (24, 0, −59), reflector ≤ Ø20 (> 19 mm in y). No clash.
 - **GPIO:** BCLK GPIO18 (pin 12), LRCLK GPIO19 (pin 35), DIN GPIO21 (pin 40), SD_MODE GPIO4 (pin 7). No clash with GPIO12/13 (antenna PWM), 14/15 (BNO055 UART fallback), 22/27 (feet), 23–25 (LEDs, projector). PFO proposed on GPIO6 (pin 31).
-- **Page:** max_volume = **−6 dBFS** (−12 dBFS while an SG90 moves); supersedes −3 dBFS. See "Audio driver" below for the numbers. Budgets keep the 1.26 A full-scale peak.
+- **Page:** max_volume = **−6 dBFS** (−12 dBFS while an SG90 moves); supersedes −3 dBFS. See "Audio driver" below for the numbers. Budgets keep the full-scale rail peak, now 1.51 A (power basis, see "Audio driver").
 
 ### Speaker printed-part volume audit (Woz 2026-11-23 02:45, `hardware/tools/stlvol.py`)
 
@@ -221,11 +221,13 @@ Bench / software-owner checks, all before this is called done:
 
 | Cap | Vrms | Power | Peak current |
 |---|---|---|---|
-| 0 dBFS (cap bypassed, bench only) | 3.59 V | 3.2 W | 1.27 A (the 1.26 A budget) |
-| **−6 dBFS = max_volume** | 1.80 V | 0.81 W | 0.64 A |
-| **−12 dBFS while any SG90 is moving** | 0.90 V | 0.20 W | 0.32 A |
+| 0 dBFS (cap bypassed, bench only) | 3.59 V | 3.2 W | 1.51 A rail peak (was 1.27 A load-side) |
+| **−6 dBFS = max_volume** | 1.80 V | 0.81 W | 0.38 A rail peak (was 0.64) |
+| **−12 dBFS while any SG90 is moving** | 0.90 V | 0.20 W | 0.10 A rail peak (was 0.32) |
 
-At −12 dBFS the AUX pair peak is 1.5 A (SG90 budget) + 0.32 A = 1.82 A, against a 2.76 A design.
+At −12 dBFS the AUX pair peak is 1.5 A (SG90 budget) + 0.10 A = 1.60 A, against a 2.76 A design.
+**Amp supply-current basis (Woz 2026-11-24 11:20, replaces the amplitude-scaled 1.27/0.64/0.32 A column).** The old column was the speaker-side peak current (3.59 Vrms / 4 Ω × √2 = 1.27 A), halved per −6 dB. That is load current, not what 5V_AUX supplies. The rail supplies power: I_peak = 2 × P_out / (η × 5 V) for a sine (instantaneous power peaks at 2× average), so it scales with power, ¼ per −6 dB. η = 0.85 is MY ASSUMPTION (MAX98357A efficiency curve not read); quiescent current not included. Result: 0 dBFS 1.51 A (was 1.27, so the old figure was LOW), −6 dBFS 0.38 A, −12 dBFS 0.10 A. Bench measurement replaces this.
+
 
 **Listening indicator: use Luxo's eyes, no separate LED in v1.** Why:
 - A separate LED needs a new GPIO, a new window in the shell and a new part.

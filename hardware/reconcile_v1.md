@@ -9,9 +9,9 @@ Paper only. No parts in hand (Naoufel 2026-11-23). Sources are named per line; "
 - 4.7 A = the same sum with the amp at its derived 0 dBFS peak, **1.27 A** (9 dB gain, 3.59 Vrms into 4 Ω; head_layout_v1 "Audio driver"): 4.4 − 1.0 + 1.27 = 4.67 A.
 - Neither has the camera (0.30 A budget), eyes, projector or Jewel 7.
 
-**Canonical now (projector_v1, TPS56637 output):** normal **4.59 A** (amp capped −12 dBFS while SG90 moves = 0.32 A); design/validation **4.9 A** (TPS56637 bench condition); bench case 0 dBFS + SG90 moving **5.53 A = forbidden**, firmware interlock (Chief 18:34). Pack side for the BMS sum: 4.9 A × 5 V / 0.913 / 6.6 V = **4.1 A** (BOM line 8, 01:45).
+**Canonical now (projector_v1, TPS56637 output):** normal **4.37 A** (amp capped −12 dBFS while SG90 moves = 0.10 A, power basis; was 4.59 A with 0.32 A); design/validation **4.9 A** (TPS56637 bench condition); bench case 0 dBFS + SG90 moving **5.77 A = forbidden** (5.53 A before the power-basis fix), firmware interlock (Chief 18:34). Pack side for the BMS sum: 4.9 A × 5 V / 0.913 / 6.6 V = **4.1 A** (BOM line 8, 01:45).
 
-**Amp current.** The MAX98357A has no current-limit setting. Its current is set by the softvol cap: 0.64 A at −6 dBFS, 0.32 A at −12 dBFS, 1.27 A only with the cap bypassed. I have not read the MAX98357A datasheet's internal over-current threshold, so I don't quote one.
+**Amp current.** The MAX98357A has no current-limit setting. Its current is set by the softvol cap: 0.38 A at −6 dBFS, 0.10 A at −12 dBFS, 1.51 A only with the cap bypassed (rail peak, power basis, η 0.85 assumed; 2026-11-24 fix of the amplitude-scaled 0.64/0.32/1.27 A). I have not read the MAX98357A datasheet's internal over-current threshold, so I don't quote one.
 
 **Servo clamp 1.0 vs 1.3 A.** 1.3 A was my 01:45 proposal on the 4 non-swapped leg servos (hip yaw + hip roll ×2), worst case 25.1 A. **Chief decided 1.0 A at 02:22** on every unit (worst case 23.9 A), implemented as EEPROM Max_Torque_Limit 357 + per-tick SRAM duty rewrite + Protection_Current backstop ≈ 1.4 A (servo_candidates_v1 "1.0 A clamp"). 1.3 A is dead. The 1.4 A figure is the trip backstop above the clamp, not a clamp.
 

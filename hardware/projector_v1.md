@@ -25,13 +25,13 @@ Status: PROPOSED, out of TOTAL. Nothing ordered. Frame = upstream robot.xml b233
 | Load | Normal (SG90 moving → amp capped −12 dBFS) | Fault / bench |
 |---|---|---|
 | 2× SG90 | 1.50 A (budget) | 1.50 A |
-| MAX98357A | 0.32 A | 1.27 A (0 dBFS, bench only) |
+| MAX98357A (power basis, head_layout_v1) | 0.10 A | 1.51 A (0 dBFS, bench only) |
 | Eyes 2× 20 mA | 0.04 A | 0.04 A |
 | Projector (trunk side, not in the neck pair) | 0.15 A | 0.28 A (LED short) |
 | Jewel 7 (PROPOSED, 0.5 A hold polyfuse) | 0.42 A (7 × 60 mA full white, Adafruit figure, not re-read) | ≈ 1.0 A until PTC trips (generic 2× hold, part not chosen) |
-| **AUX total** | **2.43 A** | 3.37 A bench / 3.14 A fault |
-| Neck AUX pair (excludes projector), design 2.76 A | 2.28 A ✓ | 2.86 A in Jewel fault (+0.10 A over, transient until PTC trips) |
-| **Regulator total incl. 5V_PI 2.16 A** | **4.59 A ✓ (≤ 4.9 bench, ≤ 6 A rating)** | 5.53 A bench case: over the 4.9 A validation. Don't run 0 dBFS with SG90 moving, or extend the bench to 5.6 A |
+| **AUX total** | **2.21 A** | 3.61 A bench / 2.92 A fault |
+| Neck AUX pair (excludes projector), design 2.76 A | 2.06 A ✓ | 2.64 A in Jewel fault ✓ (0.12 A under) |
+| **Regulator total incl. 5V_PI 2.16 A** | **4.37 A ✓ (≤ 4.9 bench, ≤ 6 A rating)** | 5.77 A bench case: over the 4.9 A validation. Firmware interlock: no 0 dBFS with an SG90 moving, or extend the bench to 5.8 A |
 
 ## Position, mass, distances
 - Assembly CoM ≈ tube midpoint **(21.2, −45.0, 119.4)**. Rear end (−3.5, −45, 122.9).
@@ -55,3 +55,11 @@ Status: PROPOSED, out of TOTAL. Nothing ordered. Frame = upstream robot.xml b233
 2. Bench: XP-G3 Vf at 150 mA, 25 °C (sets R).
 3. Bench: case temperature at 0.5 W ≤ 50 °C.
 4. IEC 62471 assessment.
+
+## Collision meshes: upstream b23317a vs Playground (Woz 2026-11-24 11:25 Paris, Chief/Atlas ask)
+**Not identical. Keep the sweep on b23317a.**
+- Playground commit 968b18de is not a commit in github.com/apirrone/Open_Duck_Playground (git: not a valid object). Compared against f698836, the Playground rev the head-mass work uses.
+- b23317a robot.xml: every geom collides (default contype/conaffinity 1). neck_pitch_assembly chain = 31 mesh geoms, incl. the STS3215 cases (wj-wk00-*), horns, Pi Zero, board, 2x SG90, bearings, head_roll_mount. Full-resolution STLs (head 21,634 tris).
+- f698836 open_duck_mini_v2.xml (and _backlash.xml): trunk_assembly and head_assembly have **zero collision geoms**; the only collision class geoms in the file are the 2 foot_bottom_tpu. Neck chain = 10 visual meshes, printed parts only, no servos/electronics. Every STL is a 104-triangle proxy; bounding boxes match b23317a within 0.0-2.7 mm (head_pitch_to_yaw worst).
+- projclear.py on f698836 meshes: centreline +10.0 mm (vs -1.6 mm on b23317a), left shoulder neutral 20.6 mm (vs 17.3), combined worst -3.8 mm (vs -5.6). Less conservative only because the neck-pitch servo and the electronics are missing. A Playground-only sweep would wrongly pass the centreline.
+- Holster CAD: none exists. The Ø12x50 cylinder (lens face x +46, axis 8 deg down, at (46, -45, 115.9)) is the whole envelope; the holster wraps it inside that envelope (3 g budget). The 4 mm clearance table should be built on this cylinder + 1.2 mm print-tolerance margin until a holster is drawn.
