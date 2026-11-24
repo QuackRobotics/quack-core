@@ -60,7 +60,7 @@ Proposed by Woz, signed off by Atlas 02:24, decided by Quack Chief 02:26. The Po
    - 30 min at 4.9 A, Vin 6.0 / 7.4 / 8.4 V, 35 °C ambient: case ≤ 100 °C, no foldback or hiccup.
    - Efficiency at 1 / 3 / 4.9 A; expect ≥ 88% at 7.4 V.
    - Dropout sweep: regulation holds down to ≤ 5.9 V in, hot.
-   - Load step 0.5 → 4.9 A while Vin steps 8.4 → 6.3 V: HAT rail > 4.78 V, no PFI trip.
+   - Load step 0.5 → 4.9 A while Vin steps 8.4 → 6.3 V: ≥ 4.92 V at the HAT, PFO_N never asserts.
    - Ripple < 50 mV p-p measured at the HAT (tip-and-barrel probe).
    - BNO055 UART errors = 0 at full load.
 
