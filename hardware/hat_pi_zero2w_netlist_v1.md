@@ -8,6 +8,7 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 - **GND_PI**: Pi ground. Header pins 6, 9, 14, 20, 25, 30, 34, 39; neck I²C twist GNDs; foot GND; LTC3226 GND.
 - **GND_AUX**: SG90s + MAX98357A return only. Enters on J2 pin 4, goes to J5/J6/J7 only.
 - **GND_PI and GND_AUX never join on this board** (they join only at the TPS56637 output in the trunk). Schematic: two separate ground symbols, no net-tie; DRC: keep-out between pours. ERC will need to accept two power-ground nets.
+- **Amp I²S/SD_MODE return: OPEN, change proposed (Woz 2026-11-24 12:40), not in this netlist until Woz + Atlas sign off.** Atlas does not ack the I²S return via GND_AUX through the trunk. Proposal: 4-channel forward digital isolator on BCLK, LRCLK, DIN, SD_MODE at J7 (side 1 3V3_PI/GND_PI, side 2 5V_AUX/GND_AUX), default-LOW output, part TBD. A second GND_PI–GND_AUX tie on the HAT is rejected (both grounds already meet at the TPS56637 output, so it makes a loop and ~60% of AUX return current would move onto the 18 AWG GND_PI wire). Amp on 5V_PI is rejected (Atlas cond. 2).
 
 ## 2. Connectors and pinouts
 
@@ -26,7 +27,7 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 | 38 | 20 | I2S_MIC_DATA ← R7 (100 Ω) ← mic DATA |
 | 40 | 21 | I2S_AMP_DIN_GPIO → R8 (100 Ω) → I2S_AMP_DIN |
 | 13 / 15 | 27 / 22 | FOOT_R_GPIO / FOOT_L_GPIO ← RC filter ← J3 |
-| 16 / 18 | 23 / 24 | EYE_L / EYE_R → J8 (**driver open**, see §5) |
+| 16 / 18 | 23 / 24 | EYE_L / EYE_R → R28/R29 (0 Ω fitted) → R22/R23 (100 Ω) → Q1/Q2 gate (low-side N-FET), see J9 |
 | 22 | 25 | PROJ_EN → J3 (FET + 100 kΩ gate pull-down are on the trunk, projector_v1) |
 | 29 | 5 | CAPGOOD ← U1 CAPGOOD |
 | 31 | 6 | PFO_N ← U1 PFO (open-drain, BOM line 10) |
@@ -74,7 +75,12 @@ PWM via R12/R13; 5V_AUX; GND_AUX.
 ### J8: mic (INMP441, BOM line 22, left wall)
 3V3_PI, GND_PI, I2S_BCLK, I2S_LRCLK, I2S_MIC_DATA, L/R (tie to GND_PI on the module = left). 6 pins.
 
-### J9: eye LEDs. Pinout open until the eye-LED driver is chosen (§5).
+### J9: eye LEDs, 3-pin (Luxo eye_anim_constraints @ 9770686 + Chief 2026-11-24: one plain single-colour Ø5 LED per eye, Jewel not in v1)
+Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode → R24/R25 (LED current R, value at capture from the chosen LED's Vf; target ≤ 10 mA per LED, Woz default, both eyes ≤ 20 mA, well under Luxo's 0.25 A clamp) → Q1/Q2 drain; Q1/Q2 source GND_PI. Gate pull-down R26/R27 100 kΩ to GND_PI (eyes off while GPIO23/24 float at boot).
+- **Why a transistor, not direct GPIO:** GPIO load stays at gate leakage only, LED current comes from 5 V not the Pi 3V3 rail, and v1.1 PWM can drive the same FETs. I did not read a Pi GPIO current-limit datasheet, so I am not sizing a direct-drive R against one.
+- **v1:** on/off/blink on the 20 ms tick, plain GPIO writes.
+- **v1.1 PWM, footprint reserved:** GPIO23/24 are not hardware-PWM pins and PWM/PCM are taken (antennas, I²S), so ≥ 8-bit at ≥ 2 kHz needs an external driver. U2 = I²C PWM/LED driver, **DNP**, on the neck I²C bus (3V3_PI, GND_PI); outputs → R30/R31 (0 Ω **DNP**) → Q1/Q2 gate; to switch, fit R30/R31 and remove R28/R29. U2 PN **TBD**; requirements: ≥ 2 channels, ≥ 8-bit (10-bit preferred), PWM ≥ 2 kHz, I²C address clear of the BNO055, 3.3 V. Not chosen: I have not read a candidate datasheet. From memory the PCA9685 tops out below 2 kHz, so it must be checked before it is considered.
+
 
 ## 3. Power-path netlist (U1 = ADI LTC3226EUD, 16-QFN 3×3; values from BOM line 10 + harness_neck_v1 l.67–72)
 | Net / node | Parts | Value | Basis |
@@ -90,7 +96,7 @@ PWM via R12/R13; 5V_AUX; GND_AUX.
 | CAPGOOD | R17 | 10 kΩ to 3V3_PI | open-drain, VOL 65 mV @ 5 mA, 1 µA leak @ 5 V [3226f]; 0.33 mA sink, OK |
 | INA226_ALERT_N | R18 | 10 kΩ to 3V3_PI | harness line-24 cond. 4 |
 | SD_MODE | R10 → R19 | 0 Ω fitted; **1.0 kΩ to GND_AUX on amp side** | scope rev 29f0387 (boot ≈ 0.07 V < 0.16 V) |
-| FOOT_L / FOOT_R | R20/C20, R21/C21 | 1 kΩ + 100 nF to GND_PI, at the Pi | harness l.13; pull-up = Pi internal (assumed, Atlas to confirm) |
+| FOOT_L / FOOT_R | R32/R33, R20/R21, C20/C21 | **Active-low.** R32/R33 10 kΩ to 3V3_PI and C20/C21 100 nF to GND_PI at the GPIO; R20/R21 1 kΩ series from J3 (kept from harness l.13). Release τ = 11 kΩ × 100 nF ≈ 1.1 ms; press τ ≈ 0.09 ms; closed level 3.3 V × 1/11 = 0.30 V. Switch return J3 pin 9 = GND_PI, never GND_AUX | Atlas spec via Chief 2026-11-24 (GPIO22 = left, GPIO27 = right, 10 kΩ + 100 nF to GND_PI) |
 | I2C pull-ups | — | **none on HAT** | Adafruit BNO055 breakout carries its own; confirm at capture to avoid a double pull-up |
 
 **Datasheet basis:** every value tagged [3226f] is from LTC3226 datasheet revision **3226f** (original, not Rev A 3226fa), file `shared/datasheets/3226f_distrelec.pdf` (sha256 c9e37b5d…2e82ca, media.distrelec.com), re-read by Woz 2026-11-24. Re-check against 3226fa if analog.com becomes reachable.
@@ -98,6 +104,8 @@ PWM via R12/R13; 5V_AUX; GND_AUX.
 **PFI error budget:** threshold spread (±25 mV at the pin = ±98 mV at 5V_PI_IN) dominates; leakage adds ±16 mV; 0.1% resistors add < ±10 mV. Worst-case falling trip **4.59–4.82 V**. Open for Atlas: the upper bound sits close to a sagging 5 V rail; confirm the 5V_PI_IN minimum under load is > 4.82 V + margin, or the HAT drops to backup on load steps.
 
 **LDO vs PFI:** backup output max 4.51 V + 28 mV is below the PFI minimum trip 4.59 V. LDO dropout from CPO not read this run.
+
+**SD_MODE margin flag [19-6779 Rev 7]:** MAX98357A datasheet 19-6779 Rev 7 (2/16), `shared/datasheets/MAX98357A-B_maxim_19-6779_rev7.pdf` (sha256 abac92d3…403e8cd9, from cdn-shop.adafruit.com), now read directly: SD_MODE B0 trip **0.08 / 0.16 / 0.355 V** (min/typ/max), internal pull-down RPD 92/100/108 kΩ, I²S VIH 1.3 V min, VIL 0.6 V max. With 1.0 kΩ the boot level is ≈ 0.07 V, guaranteed below B0 min, but only **10 mV** margin, and that rests on the 50 kΩ Pi pull-up assumption. Fix follows the ground decision: with the isolator, SD_MODE is driven by a default-low output referenced to GND_AUX and GPIO4 gets a 10 kΩ pull-down to GND_PI on side 1; without it, R19 drops to 470 Ω (≈ 0.033 V boot). Value not changed in this commit.
 
 **SD_MODE ground note:** the 1.0 kΩ pull-down returns to GND_AUX (amp side, scope l.17 "on the amp side"), so the GPIO4 path crosses domains through R9. That is a signal, not a ground join, and does not break cond. 1.
 
@@ -116,10 +124,17 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | J7, J8 | 6-pin wire-to-board | 2 | JST SH/GH (**TBD**) | **TBD** | — |
 | R5–R9 | 100 Ω 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R12, R13, R19, R20, R21 | 1.0 kΩ 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
-| R16–R18 | 10 kΩ 1% 0603 | 3 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| R16–R18, R32, R33 | 10 kΩ 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R2, R3, R4, R4b | 324k / 111k / 459k / 102k, 0.1% 25 ppm 0603 | 4 | **TBD** (0.1% thin film) | **TBD** | — |
 | R1 | 33.2 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
-| R10, R11 | 0 Ω 0603 | 2 (R11 DNP) | generic | generic | — |
+| R10, R11, R28–R31 | 0 Ω 0603 | 6 (R11, R30, R31 DNP) | generic | generic | — |
+| R22, R23 | 100 Ω 1% 0603 (FET gate) | 2 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| R24, R25 | LED current R, 0603 | 2 | value **TBD** (needs LED Vf) | — | at capture |
+| R26, R27 | 100 kΩ 1% 0603 | 2 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| Q1, Q2 | logic-level N-MOSFET, SOT-23 | 2 | **TBD** (2N7002 class; confirm R_DS(on) at V_GS = 3.3 V from the datasheet) | **TBD** | — |
+| U2 | I²C PWM/LED driver | 0 (DNP) | **TBD** (≥ 2 kHz, ≥ 8-bit) | **TBD** | footprint only, v1.1 |
+| J9 | 3-pin wire-to-board | 1 | JST SH/GH (**TBD**) | **TBD** | — |
+| D_EYE | Ø5 single-colour TH LED | 2 | **TBD** (colour: Luxo) | **TBD** | off-board, in head |
 | R14, R15 | CPO_FB divider | 2 | 1.00 MΩ / 301 kΩ 0.1% 0603 (PN TBD) | — | values set [3226f] |
 | C1 | 10 µF X5R 10 V | 1 | **TBD** (MLCC) | **TBD** | DC-bias derating check |
 | C3, C3b | 47 µF X5R ≥10 V 1206, low ESR (VOUT ≥ 47 µF [3226f]) | 2 | **TBD** (MLCC) | **TBD** | effective C at 5 V bias must stay ≥ 47 µF total |
@@ -130,10 +145,10 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 
 ## 5. Open items before capture (owner → due, Paris)
 1. KiCad 9 on the Team Computer **or** razer access: Naoufel (Chief asked 12:17) → blocks capture + ERC.
-2. Eye-LED driver for GPIO23/24 (topology, current, J9 pinout): Luxo/Woz → not on any doc yet.
+2. ~~Eye-LED driver~~ set 2026-11-24 (J9 above). Remaining: LED colour/Vf and brightness → Luxo; U2 part → Woz at v1.1.
 3. ~~LTC3226 datasheet re-read~~ done from rev 3226f (2026-11-24), see §3. Remaining: 5V_PI_IN minimum under load vs the 4.82 V PFI upper bound → Atlas; 47 µF part DC-bias check → Woz at capture.
-4. Foot inputs: confirm Pi internal pull-up and active level → Atlas.
-5. I²S returning via GND_AUX through the trunk (J7): Atlas to ack or ask for a change → before capture.
+4. ~~Foot inputs~~ set from Atlas's spec 2026-11-24 (§3). Atlas to confirm the kept 1 kΩ series R (press τ 0.09 ms).
+5. Amp I²S/SD_MODE return: Atlas did not ack; isolator proposed (§1), needs Woz + Atlas sign-off → before capture.
 6. ~~LTC3226 single source~~ ruled by Chief 2026-11-24: single-source for v1, 2 spares per build kit.
 7. Fasteners: HAT to Zero standoffs M2.5; torque spec **not yet defined** for M2.5 (only M2 is in the spec) → Woz, before mechanical green.
 
