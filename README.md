@@ -1,6 +1,7 @@
 # Quack Robotics (quack-core)
 
-**Micro Duck** — A ~42 cm open-source bipedal robot, building on [Open Duck Mini v2](https://github.com/apirrone/Open_Duck_Mini) by apirrone (Apache-2.0).
+**Micro Duck** — A ~42 cm open-source bipedal robot, building on
+[Open Duck Mini v2](https://github.com/apirrone/Open_Duck_Mini) by apirrone (Apache-2.0).
 
 ## Repository Structure
 
