@@ -80,7 +80,26 @@ PWM via R12/R13; 5V_AUX; GND_AUX.
 
 ### J7: amp breakout (MAX98357A, off-board, right wall; harness cond. 2)
 
-5V_AUX, GND_AUX, AMP_BCLK, AMP_LRCLK, AMP_DIN, AMP_SD_MODE (all four signals are U3 side-2 outputs, 5 V logic referenced to GND_AUX). 6 pins, JST-SH or GH (pick at schematic). The amp's logic reference is GND_AUX and its I²S edges now return on GND_AUX in the J7 cable, not through the trunk loop. **Open check:** the J7 5V_AUX/GND_AUX contacts carry the amp supply (1.51 A at 0 dBFS bench-only, 1.60 A rail basis at the −12 dBFS cap per head_layout l.234); the SH/GH contact current rating is **not read**, so the series is picked only after that datasheet. Bench check unchanged: no I²S errors and no audible clicks at 48 kHz.
+**8-pin JST-GH (1.25 mm), AWG26, equal-length power pairs** (Woz proposal; Atlas ack on current + Chief GO 2026-11-24 14:10). All four signals are U3 side-2 outputs, 5 V logic referenced to GND_AUX. The amp's logic reference is GND_AUX and its I²S edges return on GND_AUX in the J7 cable, not through the trunk loop.
+
+| Pin | Net |
+|---|---|
+| 1 | 5V_AUX |
+| 2 | 5V_AUX |
+| 3 | GND_AUX |
+| 4 | AMP_BCLK |
+| 5 | GND_AUX |
+| 6 | AMP_LRCLK |
+| 7 | AMP_DIN |
+| 8 | AMP_SD_MODE |
+
+Pin order is a Woz choice (BCLK, the fastest edge, sits between two GND_AUX returns); confirm at schematic.
+
+- **Contact rating:** JST GH 1.0 A per contact with AWG26; contact resistance 30 mΩ max initial, 50 mΩ max after environmental tests [JST eGH, read 2026-11-24; local copy lost in a Team Computer reset, re-download to razer pending].
+- **Amp draw** (head_layout_v1 audio-driver table, Woz calc, η = 0.85 assumed, sine): −6 dBFS max_volume 0.19 A average / 0.38 A rail peak; 0 dBFS bench-only 0.75 A average / 1.51 A rail peak. One pair would pass at max_volume; two pairs are kept for margin.
+- **Why two pairs:** 1.51 A bench peak split evenly = 0.76 A per contact; with one contact at 30 mΩ and its partner at 50 mΩ the split is 0.94 A against 1.0 A, so each pair's two wires must be the same length. A shorted-speaker fault is set by the MAX98357A current limit (ILIM 2.8 A typ [19-6779 Rev 7]), not the contacts.
+- **Routing gate (Atlas condition):** open v1 DoD bench gate, see harness_neck_v1 "J7 harness bench-flex".
+- Bench check unchanged: no I²S errors and no audible clicks at 48 kHz.
 
 ### J8: mic (INMP441, BOM line 22, left wall)
 
@@ -169,7 +188,8 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | J3 | JST-GH 12-pin, SMD side entry + GHR-12V-S housing + crimps | 1 set | JST SM12B-GHS-TB (series naming; confirm PN) | none mating-compatible: single source, buy spare | Atlas + Chief acked 12-pin |
 | J4 | 2-pin cap connector | 0/1 | **TBD** | **TBD** | DNP by default |
 | J5, J6 | 1×3 2.54 mm male header | 2 | generic | generic | — |
-| J7, J8 | 6-pin wire-to-board | 2 | JST SH/GH (**TBD**) | **TBD** | — |
+| J7 | JST-GH 8-pin, SMD side entry + GHR-08V-S housing + crimps, AWG26 | 1 set | JST SM08B-GHS-TB (series naming; confirm PN) | none mating-compatible: single source, buy spare | Atlas ack + Chief GO 2026-11-24 |
+| J8 | 6-pin wire-to-board | 1 | JST SH/GH (**TBD**) | **TBD** | — |
 | R5–R9 | 100 Ω 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R12, R13, R20, R21 | 1.0 kΩ 1% 0603 | 4 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R19 | 1.0 kΩ 1% 0603 | 0 (DNP) | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | footprint kept, DNP with U3 |
@@ -203,7 +223,7 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 2. ~~Eye-LED driver~~ set 2026-11-24 (J9 above). Remaining: LED colour/Vf and brightness → Luxo; U2 part → Woz at v1.1.
 3. ~~LTC3226 datasheet re-read~~ done from rev 3226f (2026-11-24), see §3. Remaining: 5V_PI_IN minimum under load vs the 4.82 V PFI upper bound → Atlas; 47 µF part DC-bias check → Woz at capture.
 4. ~~Foot inputs~~ set from Atlas's spec 2026-11-24 (§3). Atlas to confirm the kept 1 kΩ series R (press τ 0.09 ms).
-5. ~~Amp I²S/SD_MODE return~~ ruled 2026-11-24: U3 ISO7740FDBQR isolator (§1, §3). Still open: U3 price + mass, J7 contact current rating, bench checks listed in the U3 check.
+5. ~~Amp I²S/SD_MODE return~~ ruled 2026-11-24: U3 ISO7740FDBQR isolator (§1, §3). J7 set to 8-pin GH, 2 power pairs (J7 above). Still open: U3 stock (LCSC 0; Mouser/DigiKey not read), J7 harness bench-flex gate, bench checks listed in the U3 check.
 6. ~~LTC3226 single source~~ ruled by Chief 2026-11-24: single-source for v1, 2 spares per build kit.
 7. Fasteners: HAT to Zero standoffs M2.5; torque spec **not yet defined** for M2.5 (only M2 is in the spec) → Woz, before mechanical green.
 
