@@ -97,7 +97,7 @@ Pin order is a Woz choice (BCLK, the fastest edge, sits between two GND_AUX retu
 
 - **Contact rating:** JST GH 1.0 A per contact with AWG26; contact resistance 30 mΩ max initial, 50 mΩ max after environmental tests [JST eGH, read 2026-11-24; local copy lost in a Team Computer reset, re-download to razer pending].
 - **Amp draw** (head_layout_v1 audio-driver table, Woz calc, η = 0.85 assumed, sine): −6 dBFS max_volume 0.19 A average / 0.38 A rail peak; 0 dBFS bench-only 0.75 A average / 1.51 A rail peak. One pair would pass at max_volume; two pairs are kept for margin.
-- **Why two pairs:** 1.51 A bench peak split evenly = 0.76 A per contact; with one contact at 30 mΩ and its partner at 50 mΩ the split is 0.94 A against 1.0 A, so each pair's two wires must be the same length. A shorted-speaker fault is set by the MAX98357A current limit (ILIM 2.8 A typ [19-6779 Rev 7]), not the contacts.
+- **Why two pairs:** 1.51 A bench peak split evenly = 0.76 A per contact; with one contact at 30 mΩ and its partner at 50 mΩ the split is 0.94 A against 1.0 A, so each pair's two wires must be the same length. A shorted-speaker fault is set by the MAX98357A current limit (ILIM 2.8 A typ, p.5 [19-6779 Rev 7]), not the contacts. The same datasheet (p.4, Absolute Maximum Ratings) limits continuous current in/out of VDD/GND/OUT_ to ±1.6 A, so a single 1.0 A pair would be the weak link before the IC is; another reason for two pairs (re-read 2026-11-24, sha256 abac92d3…403e8cd9).
 - **Routing gate (Atlas condition):** open v1 DoD bench gate, see harness_neck_v1 "J7 harness bench-flex".
 - Bench check unchanged: no I²S errors and no audible clicks at 48 kHz.
 
