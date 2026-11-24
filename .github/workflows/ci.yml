@@ -24,138 +24,129 @@ jobs:
           npm install -g prettier markdownlint-cli 2>/dev/null || true
       - name: Run lint (per language present)
         run: |
-          [ -f Cargo.toml ] && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings
-          [ -f pyproject.toml ] || [ -f requirements.txt ] && ruff check .
-          [ -f package.json ] && npx prettier --check . && npx markdownlint "**/*.md"
-          [ -f Dockerfile ] && hadolint Dockerfile
-          [ -f buf.yaml ] && buf lint
+          if [ -f Cargo.toml ]; then cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings; fi
+          if [ -f pyproject.toml ] || [ -f requirements.txt ]; then ruff check .; fi
+          if [ -f package.json ]; then npx prettier --check . && npx markdownlint "**/*.md"; fi
+          if [ -f Dockerfile ]; then hadolint Dockerfile; fi
+          if [ -f buf.yaml ]; then buf lint; fi
         shell: bash
 
   test-rust:
     name: Test (Rust)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/Cargo.toml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        if: ${{ hashFiles('**/*.rs') != '' }}
       - uses: Swatinem/rust-cache@v2
+        if: ${{ hashFiles('**/*.rs') != '' }}
       - run: cargo test --all-targets --all-features
+        if: ${{ hashFiles('**/*.rs') != '' }}
 
   test-python:
     name: Test (Python)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
         with:
           python-version: '3.11'
           cache: 'pip'
       - run: pip install -e .[test] 2>/dev/null || pip install pytest pytest-cov
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
+      - name: Install sim deps for sim/tests
+        if: ${{ hashFiles('sim/requirements.txt') != '' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
+          pip install --require-hashes -r sim/requirements.lock.txt
       - run: pytest --cov=./ --cov-report=xml
+        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
 
   test-typescript:
     name: Test (TypeScript)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: ${{ hashFiles('**/package.json') != '' }}
         with:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+        if: ${{ hashFiles('**/package.json') != '' }}
       - run: npm test --if-present
+        if: ${{ hashFiles('**/package.json') != '' }}
 
-  # Sim validation gate — runs on quack-sim and quack-ml repos
+  # Sim gate: run the upstream walking policy in MuJoCo (sim/sim_gate.py).
+  # hashFiles() is only allowed in step-level if:, so each step is guarded.
   sim-gate:
     name: Sim Gate (MuJoCo walk test)
-    runs-on: ubuntu-latest
-    if: ${{ github.repository == 'QuackRobotics/quack-sim' || github.repository == 'QuackRobotics/quack-ml' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Checkout quack-sim (for MJCF assets)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         with:
-          repository: QuackRobotics/quack-sim
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: quack-sim
-
+          python-version: '3.11'  # mujoco 3.2.* has no wheel for newer runner Pythons
       - name: Install MuJoCo + Python deps
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: |
-          sudo apt-get update && sudo apt-get install -y \
-            libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender1 libxfixes3 libxi6
-          pip install mujoco==3.2.* onnx onnxruntime numpy
-
-      - name: Fetch upstream MJCF + ONNX policy (Open Duck Mini v2)
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1
+          pip install --require-hashes -r sim/requirements.lock.txt
+      - name: Record sim environment (python, mujoco, onnxruntime, numpy, lockfile hash)
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: |
-          mkdir -p upstream
-          # MJCF model from Open Duck Mini v2
-          curl -fsSL -o upstream/open_duck_mini.xml \
-            https://raw.githubusercontent.com/apirrone/Open_Duck_Mini/v2/mujoco/open_duck_mini.xml
-          # ONNX policy (best walk checkpoint v2)
-          curl -fsSL -o upstream/BEST_WALK_ONNX_2.onnx \
-            https://github.com/apirrone/Open_Duck_Mini/releases/download/v2-policies/BEST_WALK_ONNX_2.onnx
-
-      - name: Run sim gate — walk for 10s without falling
+          python -c 'import platform, mujoco, onnxruntime, numpy; print("python", platform.python_version()); print("mujoco", mujoco.__version__); print("onnxruntime", onnxruntime.__version__); print("numpy", numpy.__version__)' | tee sim-env.txt
+          echo "lockfile_sha256 $(sha256sum sim/requirements.lock.txt | cut -d' ' -f1)" | tee -a sim-env.txt
+          pip freeze --all > sim-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
+        with:
+          name: sim-env
+          path: |
+            sim-env.txt
+            sim-pip-freeze.txt
+      - name: Fetch pinned upstream assets (sha256-verified)
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
+        run: bash sim/fetch_upstream.sh upstream
+      - name: Sim gate - walk 10 s at 0.15 m/s without falling, >= 0.5 m forward
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
+        run: python sim/sim_gate.py --upstream-dir upstream --cmd-x 0.15 --min-progress 0.5
+      - name: Negative control - zero-action policy must FAIL the gate
+        if: ${{ hashFiles('sim/sim_gate.py') != '' }}  # sim/ lands with PR #7
         run: |
-          python - <<'PY'
-          import mujoco
-          import numpy as np
-          import time
-
-          model = mujoco.MjModel.from_xml_path('upstream/open_duck_mini.xml')
-          data = mujoco.MjData(model)
-
-          # Load ONNX policy
-          import onnxruntime as ort
-          session = ort.InferenceSession('upstream/BEST_WALK_ONNX_2.onnx')
-          input_name = session.get_inputs()[0].name
-          output_name = session.get_outputs()[0].name
-
-          # Simulation parameters
-          sim_duration = 10.0  # seconds
-          dt = model.opt.timestep
-          max_steps = int(sim_duration / dt)
-          fall_threshold = 0.3  # torso height below this = fall (meters)
-
-          torso_id = model.body('torso').id if 'torso' in [model.body(i).name for i in range(model.nbody)] else 0
-
-          fallen = False
-          for step in range(max_steps):
-              # Get observation (simplified: qpos[2:] + qvel)
-              obs = np.concatenate([data.qpos[2:], data.qvel]).astype(np.float32).reshape(1, -1)
-              action = session.run([output_name], {input_name: obs})[0].flatten()
-              data.ctrl[:] = action
-              mujoco.mj_step(model, data)
-
-              # Check fall condition
-              torso_z = data.xpos[torso_id, 2]
-              if torso_z < fall_threshold:
-                  fallen = True
-                  print(f"FELL at step {step} (t={step*dt:.2f}s), torso_z={torso_z:.3f}")
-                  break
-
-          if fallen:
-              raise SystemExit("SIM GATE FAILED: Robot fell within 10s")
-          else:
-              print(f"SIM GATE PASSED: Walked {sim_duration}s without falling (torso_z={torso_z:.3f})")
-
+          set +e
+          python sim/sim_gate.py --upstream-dir upstream --cmd-x 0.15 --min-progress 0.5 --sabotage zero-action
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "negative control expected exit 1 (gate failure), got $code"; exit 1
+          fi
+          echo "negative control OK: sabotaged policy was rejected"
   security:
     name: Security (audit + CodeQL)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: cargo-audit
-        if: ${{ hashFiles('**/Cargo.toml') != '' }}
+        if: ${{ hashFiles('**/Cargo.lock') != '' }}
         run: |
           cargo install cargo-audit --locked 2>/dev/null || true
           cargo audit
-      - name: pip-audit
-        if: ${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') != '' }}
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles('**/requirements*.txt') != '' }}
+        with:
+          python-version: '3.11'  # same Python the sim deps are pinned for
+      - name: pip-audit (our requirements files, not the runner's system Python)
+        if: ${{ hashFiles('**/requirements*.txt') != '' }}
         run: |
           pip install pip-audit
-          pip-audit
+          git ls-files '*requirements*.txt' | while read -r req; do
+            echo "pip-audit -r $req"
+            pip-audit -r "$req"
+          done
 
   sbom:
     name: SBOM (Syft)
@@ -169,18 +160,14 @@ jobs:
 
   # Final gate job — required by branch protection
   ci:
-    name: ci (gate)
+    name: ci
     runs-on: ubuntu-latest
     needs: [lint, test-rust, test-python, test-typescript, sim-gate, security, sbom]
     if: ${{ always() }}
     steps:
-      - name: Check all required jobs passed
+      - name: Fail if any required job failed or was cancelled
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: |
-          for job in lint test-rust test-python test-typescript sim-gate security sbom; do
-            result="${{ needs.$job.result }}"
-            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
-              echo "Required job $job failed: $result"
-              exit 1
-            fi
-          done
-      - run: echo "All CI gates passed!"
+          echo '${{ toJSON(needs) }}'
+          exit 1
+      - run: echo "All CI gates passed"
