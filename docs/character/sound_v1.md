@@ -48,7 +48,7 @@ GAIN not connected means the MAX98357A fixed 9 dB gain (datasheet default). If t
 
 ## Sound set
 
-Times are measured from the trigger event. "Nod" is a head-pitch offset from the policy-held pose
+Times are measured from the trigger event. "Nod" is a head-pitch offset from the default head pose
 (`head_offset_reference`), gated on `gait.head_overlay_allowed`; if the gate is false the nod is skipped and the sound
 still plays.
 

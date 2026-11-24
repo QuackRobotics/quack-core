@@ -23,7 +23,7 @@ leads". The head leads instead, and the eyes only blink (on/off). No colour or a
 | `cam_pitch_offset_deg` | 15 | deg | lens up-tilt in head frame; Woz sets final |
 | `expr_offset_max_frac` | 0.15 | of joint range | hard cap, all expressive offsets |
 | `head_gate_signal` | `gait.head_overlay_allowed` | bool (Atlas, default false) | head offsets only while true; Atlas recentres head within 200 ms when it drops. Atlas overlay caps (15% range, rate) win over any value here |
-| `head_offset_reference` | policy-held head pose | frame | offsets are added on top of the head pose the walk policy holds (~0.2 rad off home), measured from that pose, not from home (Chief 01:13) |
+| `head_offset_reference` | runtime default head targets (0, 0, 0, 0) | rad | offsets are measured from the `motor_targets[5:9]` default (neck_pitch, head_pitch, head_yaw, head_roll): `HWI.init_pos` in Open_Duck_Mini_Runtime v2 and the Playground `home` keyframe ctrl, all 0, so the XML zero pose (Atlas/Chief 2026-11-24). Positive neck_pitch and head_pitch raise the nose. The walk policy also moves the head (motor_targets = default + action x action_scale), so offsets ride on default + policy output, bounded by Hinton's rollout min/max for joints 5-8 |
 | `blink_ms` | 120 | ms | eye LEDs off time for one blink |
 
 ## B1 notice someone appearing
