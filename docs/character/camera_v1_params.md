@@ -4,9 +4,13 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 # Camera v1 behaviour parameters (Luxo, draft v0.1, 2026-11-23)
 
-Companion to `camera_v1_proposal.md` (accepted as draft by Chief 01:08). All values are starting defaults for tuning, not measured. Every head/antenna offset is clamped to <= 15% of that joint's MJCF range (`expr_offset_max_frac`), and head offsets apply only while Atlas reports standing.
+Companion to `camera_v1_proposal.md` (accepted as draft by Chief 01:08). All values are starting defaults for tuning,
+not measured. Every head/antenna offset is clamped to <= 15% of that joint's MJCF range (`expr_offset_max_frac`), and
+head offsets apply only while Atlas reports standing.
 
-Eye hardware correction (Chief 01:08, checked in upstream `docs/assembly_guide.md` lines 194-196): v1 eyes are single LEDs on GPIO 23 (left), 24 (right), 25 (projector). They cannot show gaze direction, so B2 no longer has "LED gaze leads". The head leads instead, and the eyes only blink (on/off). No colour or addressable eye is assumed.
+Eye hardware correction (Chief 01:08, checked in upstream `docs/assembly_guide.md` lines 194-196): v1 eyes are single
+LEDs on GPIO 23 (left), 24 (right), 25 (projector). They cannot show gaze direction, so B2 no longer has "LED gaze
+leads". The head leads instead, and the eyes only blink (on/off). No colour or addressable eye is assumed.
 
 ## Shared
 
@@ -63,7 +67,12 @@ Eye hardware correction (Chief 01:08, checked in upstream `docs/assembly_guide.m
 
 ## Interruption (gate drops mid-move)
 
-B1 and B2 must be cuttable at any frame without looking broken. When `gait.head_overlay_allowed` goes false: the head layer stops issuing offsets at once and Atlas owns the return to centre (<= 200 ms); no Luxo head keyframe fights it. Antennas and eye blink keep playing (they are not gated), so the beat still reads: in B1 the antenna perk and beak click finish, in B2 the antennas keep their lean toward the face. Any pending anticipation counter-yaw is dropped, not queued. When the gate returns true, B2 re-acquires from the current head pose (no snap to the old target) and the B1 cooldown keeps running.
+B1 and B2 must be cuttable at any frame without looking broken. When `gait.head_overlay_allowed` goes false: the head
+layer stops issuing offsets at once and Atlas owns the return to centre (<= 200 ms); no Luxo head keyframe fights it.
+Antennas and eye blink keep playing (they are not gated), so the beat still reads: in B1 the antenna perk and beak click
+finish, in B2 the antennas keep their lean toward the face. Any pending anticipation counter-yaw is dropped, not queued.
+When the gate returns true, B2 re-acquires from the current head pose (no snap to the old target) and the B1 cooldown
+keeps running.
 
 | Parameter | Default | Unit | Meaning |
 |---|---|---|---|
@@ -72,7 +81,8 @@ B1 and B2 must be cuttable at any frame without looking broken. When `gait.head_
 
 ## Camera window v2 (accepted: Chief 2026-11-23 ~10:12, Woz building to it 10:22)
 
-Replaces the v1 window (Ø10 bezel, lens opening ≤ Ø4, lens 2 mm recessed). Reason: BOM line 17 / Woz b9e0bca, CM3 lens barrel Ø5.75.
+Replaces the v1 window (Ø10 bezel, lens opening ≤ Ø4, lens 2 mm recessed). Reason: BOM line 17 / Woz b9e0bca, CM3 lens
+barrel Ø5.75.
 Frame: head_assembly / URDF head link, mm, +x up, −z forward. Front face z = −59.05.
 Assumes CM3 standard lens (66° H, 41° V, 75° diag). The Wide variant (120° diag) needs a different window.
 
@@ -86,13 +96,19 @@ Assumes CM3 standard lens (66° H, 41° V, 75° diag). The Wide variant (120° d
 | cam_visible_opening_mm | ≈ 6.0 wide × 7.5 tall | the top relief reaches x ≈ +4.5; smaller than the v1 Ø10 bezel |
 | cam_finish | matte black, servo_dark | no gloss, no bright rim |
 
-Why not a plain Ø6.0 bore through the vertical face: the lens is tilted 15°, so the barrel top would sit 1.49 mm deep. With 0.125 mm of radial clearance, any recess deeper than about 0.16 mm vignettes the diagonal corners (tan 37.5° = 0.77).
+Why not a plain Ø6.0 bore through the vertical face: the lens is tilted 15°, so the barrel top would sit 1.49 mm deep.
+With 0.125 mm of radial clearance, any recess deeper than about 0.16 mm vignettes the diagonal corners (tan 37.5° =
+0.77).
 Check of Woz's 10.4 option: 5.75 + 2·3·tan 37.5° = 10.35 mm, so it agrees with the 75° diagonal.
 
-Beak keep-out x ≤ −2.9 − 0.096·d: still holds. The bottom barrel edge is at x −2.78 at the face, so the line has 0.12 mm of margin. v1 has no beak, so nothing crosses it.
-Head CoM: the window centre stays at x = 0 (inside x 0…−2) around the camera mount point (1, 0, −51); the ~0.06 g change leaves the head CoM at about (8.29, −1.20, 21.20) (Chief, 09:53).
+Beak keep-out x ≤ −2.9 − 0.096·d: still holds. The bottom barrel edge is at x −2.78 at the face, so the line has 0.12 mm
+of margin. v1 has no beak, so nothing crosses it.
+Head CoM: the window centre stays at x = 0 (inside x 0…−2) around the camera mount point (1, 0, −51); the ~0.06 g change
+leaves the head CoM at about (8.29, −1.20, 21.20) (Chief, 09:53).
 
-## Camera window v2.1 (Chief 2026-11-24 10:58, after Woz signed the camera: Pi Camera Module 3 SC1223, centreline, connector edge up, 4x M2)
+## Camera window v2.1 (Chief 2026-11-24 10:58)
+
+After Woz signed the camera: Pi Camera Module 3 SC1223, centreline, connector edge up, 4x M2.
 
 | param | value | note |
 |---|---|---|
