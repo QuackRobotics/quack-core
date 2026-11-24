@@ -31,3 +31,21 @@ Floor spot distance = 312 / tan(tilt + pitch): 8° → 2.2 m; 13° → 1.35 m; 1
 1. light_the_path — walking torch, lean = closer spot.
 2. show_and_tell — wall gobo, head looks at own image, then at the human.
 3. caught_out — startle: lean-back sweeps the spot up, cut LED, sheepish look at the lamp.
+
+## Update 2026-11-24 11:01 — Atlas clearance sweep: interim HAL box (supersedes my bbox clearances above)
+
+While the projector is mounted, the HAL limits are (Atlas, via Chief):
+neck_pitch >= -9.4 deg, head_pitch >= -22.5 deg, |head_roll| <= 22.5 deg, head_yaw free.
+Until that clamp is in code: no head commands at all with the projector mounted.
+A 4 mm clearance table from Woz's holster CAD will replace this box later.
+Sign convention of the pitch limits to be confirmed against Atlas's HAL before any choreography is keyed.
+
+Params (no hardcoded limits): proj_box_neck_pitch_min_deg, proj_box_head_pitch_min_deg, proj_box_head_roll_abs_deg.
+The occlusion rule proj_max_neck_pitch_deg stays as a separate, beam-side limit.
+
+Behaviour fit:
+- light_the_path: aim is body pitch only, so it fits as-is. idle_tired head droop is clamped to the box while mounted.
+- show_and_tell: the turn to the image is head yaw (free) plus a beak click, so it fits. Interim (no head commands): eyes and beak only.
+- caught_out: the glance at the lamp is mostly yaw; pitch and roll accents stay inside the box. Interim: eye glance only.
+
+Audio: capped at -12 dBFS while the antennas move (provisional). Chirps and beak clicks that coincide with antenna motion respect udio_cap_dbfs_antenna_moving (default -12).
