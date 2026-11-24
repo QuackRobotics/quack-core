@@ -3,12 +3,15 @@ Fixes head_grams_v1 l.73: eye cut and bulbs were placed at (9.9, -40, 25) and (1
 upstream printed shell b23317a print/head.stl: both eye holes Ø25 centred (10.35, ±40), front wall
 z -59.05..-56.05 (woz/eyefit/printfit2.log). Z_EYE = cut #1 point (right bezel out at -62.06, mirrored left
 in at -61.05, mass-weighted); Z_BULB = bulb.stl centroid; both from the print STLs in the head_assembly frame.
-Disc Ø25 in both eyes (Chief 2026-11-24 15:06).
+Disc Ø29.4 on the bezel Ø29.6 counterbore ledge, both eyes (Chief 2026-11-24 15:41, ruling (b)).
+Ledge z from print/left_eye.stl / right_eye.stl: left -59.80 (0.75 mm proud), right -63.65 (≈4.6 mm proud).
 All masses are Woz estimates; nothing weighed. Usage: python3 eyerow.py"""
 import numpy as np
 from headrow import BASE, HEADER, OPTIONS, PATH, Y_RIGHT, ballast_for, row, fullinertia, C0
 
 Z_EYE, Z_BULB, Z_LED = -62.51, -55.08, -47.0
+D_DISC = 29.4
+Z_LEDGE = {40: -59.80, -40: -63.65}  # disc rear face on the ledge, disc extends outward (-z)
 X = 10.35
 MIC_R = OPTIONS["A mic to right wall (mirror)"]
 AMP_WALL = [("amp breakout off y -45", -2, (10, -45, 25)), ("amp breakout at right wall", 2, (10, Y_RIGHT, 25))]
@@ -32,10 +35,12 @@ def eyelight(final):
     LED + wire 0.3 g + tapered PETG tube (half the straight tube) + disc in, per eye."""
     items = []
     for y, bore in ((40, 25.0), (-40, 25.0)):
-        ri, ro, L = bore / 2, bore / 2 + 1.2, 22.35  # disc rear -57.55 .. epoxy -35.2
+        ri, ro, L = bore / 2, bore / 2 + 1.2, 22.35  # tube + LED unchanged behind the wall, to epoxy -35.2
         tube = np.pi * (ro**2 - ri**2) * L / 1000 * 1.27 / 2
-        disc = np.pi * ri**2 * (2.0 if final else 1.0) / 1000 * (1.19 if final else 1.27)
-        items += [(f"bulb out y{y:+d}", -2.10, (X, y, Z_BULB)), (f"eye light in y{y:+d}", tube + disc + 0.3, (X, y, Z_LED))]
+        t = 2.0 if final else 1.0
+        disc = np.pi * (D_DISC / 2)**2 * t / 1000 * (1.19 if final else 1.27)
+        items += [(f"bulb out y{y:+d}", -2.10, (X, y, Z_BULB)), (f"tube+LED in y{y:+d}", tube + 0.3, (X, y, Z_LED)),
+                  (f"disc in y{y:+d}", disc, (X, y, Z_LEDGE[y] - t / 2))]
         print(f"   y{y:+d}: tube {tube:.2f} disc {disc:.2f} LED 0.30 -> {tube + disc + 0.3:.2f} g")
     return items
 
