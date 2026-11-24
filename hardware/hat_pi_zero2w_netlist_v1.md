@@ -9,7 +9,7 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 - **GND_PI**: Pi ground. Header pins 6, 9, 14, 20, 25, 30, 34, 39; neck I²C twist GNDs; foot GND; LTC3226 GND.
 - **GND_AUX**: SG90s + MAX98357A return only. Enters on J2 pin 4, goes to J5/J6/J7 only.
 - **GND_PI and GND_AUX never join on this board** (they join only at the TPS56637 output in the trunk). Schematic: two separate ground symbols, no net-tie; DRC: keep-out between pours. ERC will need to accept two power-ground nets.
-- **Amp I²S/SD_MODE return: OPEN, change proposed (Woz 2026-11-24 12:40), not in this netlist until Woz + Atlas sign off.** Atlas does not ack the I²S return via GND_AUX through the trunk. Proposal: 4-channel forward digital isolator on BCLK, LRCLK, DIN, SD_MODE at J7 (side 1 3V3_PI/GND_PI, side 2 5V_AUX/GND_AUX), default-LOW output, part TBD. A second GND_PI–GND_AUX tie on the HAT is rejected (both grounds already meet at the TPS56637 output, so it makes a loop and ~60% of AUX return current would move onto the 18 AWG GND_PI wire). Amp on 5V_PI is rejected (Atlas cond. 2).
+- **Amp I²S/SD_MODE return: ruled, isolated at J7 (Woz proposal 12:40, Atlas ack via Chief 2026-11-24).** U3 = TI **ISO7740FDBQR** (4/0 channels, F = default-LOW) on BCLK, LRCLK, DIN, SD_MODE. Side 1 = 3V3_PI/GND_PI, side 2 = 5V_AUX/GND_AUX, so no I²S edge returns through the trunk and GND_PI/GND_AUX still never join on this board. Check in §3 "U3 isolator check" [SLLSEP4K]. A second GND_PI–GND_AUX tie on the HAT stays rejected (loop; ~60% of AUX return current onto the 18 AWG GND_PI wire). Amp on 5V_PI stays rejected (Atlas cond. 2).
 
 ## 2. Connectors and pinouts
 
@@ -20,8 +20,8 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 | 2, 4 | — | 5V_PI_HOLD (LTC3226 VOUT, wide pour to both, Atlas layout rule) |
 | 1, 17 | — | 3V3_PI (Pi regulator out; used only for pull-ups + BNO055 3V3 to neck) |
 | 3 / 5 | 2 / 3 | I2C_SDA / I2C_SCL → J3 |
-| 7 | 4 | SD_MODE_GPIO → R9 (100 Ω) → SD_MODE (R10 0 Ω fitted) |
-| 36 | 16 | SD_MODE_ALT → R11 (0 Ω **DNP**) → SD_MODE |
+| 7 | 4 | SD_MODE_GPIO → R9 (100 Ω) → SD_MODE_PI (R10 0 Ω fitted) → U3 IND; R35 10 kΩ SD_MODE_PI → GND_PI |
+| 36 | 16 | SD_MODE_ALT → R11 (0 Ω **DNP**) → SD_MODE_PI |
 | 8 / 10 | 14 / 15 | UART_TX / UART_RX → TP1 / TP2 only (BNO055 UART fallback; no neck pin in v1) |
 | 11 | 17 | SW_EN → J3 (e-stop / servo-power switch gate; trunk pull-down = OFF) |
 | 12 | 18 | I2S_BCLK_GPIO → R5 (100 Ω) → I2S_BCLK |
@@ -80,7 +80,7 @@ PWM via R12/R13; 5V_AUX; GND_AUX.
 
 ### J7: amp breakout (MAX98357A, off-board, right wall; harness cond. 2)
 
-5V_AUX, GND_AUX, I2S_BCLK, I2S_LRCLK, I2S_AMP_DIN, SD_MODE. 6 pins, JST-SH or GH (pick at schematic). The amp's logic reference is GND_AUX; its ground joins GND_PI only in the trunk. **Flag for Atlas:** I²S edges then return through the trunk loop, ~1 m. The 100 Ω series resistors slow the edges; bench check: no I²S errors and no audible clicks at 48 kHz.
+5V_AUX, GND_AUX, AMP_BCLK, AMP_LRCLK, AMP_DIN, AMP_SD_MODE (all four signals are U3 side-2 outputs, 5 V logic referenced to GND_AUX). 6 pins, JST-SH or GH (pick at schematic). The amp's logic reference is GND_AUX and its I²S edges now return on GND_AUX in the J7 cable, not through the trunk loop. **Open check:** the J7 5V_AUX/GND_AUX contacts carry the amp supply (1.51 A at 0 dBFS bench-only, 1.60 A rail basis at the −12 dBFS cap per head_layout l.234); the SH/GH contact current rating is **not read**, so the series is picked only after that datasheet. Bench check unchanged: no I²S errors and no audible clicks at 48 kHz.
 
 ### J8: mic (INMP441, BOM line 22, left wall)
 
@@ -129,7 +129,8 @@ Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode 
 | PFO_N | R16 | 10 kΩ to 3V3_PI | open-drain, 1 µA leak @ 5 V [3226f] |
 | CAPGOOD | R17 | 10 kΩ to 3V3_PI | open-drain, VOL 65 mV @ 5 mA, 1 µA leak @ 5 V [3226f]; 0.33 mA sink, OK |
 | INA226_ALERT_N | R18 | 10 kΩ to 3V3_PI | harness line-24 cond. 4 |
-| SD_MODE | R10 → R19 | 0 Ω fitted; **1.0 kΩ to GND_AUX on amp side** | scope rev 29f0387 (boot ≈ 0.07 V < 0.16 V) |
+| AMP_SD_MODE | U3 OUTD → R34 → J7; R19 | **R34 2.0 kΩ series** (datasheet-suggested ~2 kΩ to limit SD_MODE pin current [19-6779 p.17]); **R19 DNP** (a 1.0 kΩ pull-down would divide the 5 V high to ≈ 1.67 V, too close to B2 max 1.5 V); boot/fault low comes from U3 default-LOW. Side 1: **R35 10 kΩ SD_MODE_PI → GND_PI** | Woz 2026-11-24, see U3 isolator check |
+| AMP_BCLK / AMP_LRCLK / AMP_DIN | R36 / R37 / R38 | **100 Ω** series at U3 OUTA/B/C, edge control on the J7 cable (same role as R5/R6/R8 on side 1) | Woz choice, confirm at bench |
 | FOOT_L / FOOT_R | R32/R33, R20/R21, C20/C21 | **Active-low.** R32/R33 10 kΩ to 3V3_PI and C20/C21 100 nF to GND_PI at the GPIO; R20/R21 1 kΩ series from J3 (kept from harness l.13). Release τ = 11 kΩ × 100 nF ≈ 1.1 ms; press τ ≈ 0.09 ms; closed level 3.3 V × 1/11 = 0.30 V. Switch return J3 pin 9 = GND_PI, never GND_AUX | Atlas spec via Chief 2026-11-24 (GPIO22 = left, GPIO27 = right, 10 kΩ + 100 nF to GND_PI) |
 | I2C pull-ups | — | **none on HAT** | Adafruit BNO055 breakout carries its own; confirm at capture to avoid a double pull-up |
 
@@ -141,7 +142,18 @@ Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode 
 
 **SD_MODE margin flag [19-6779 Rev 7]:** MAX98357A datasheet 19-6779 Rev 7 (2/16), `shared/datasheets/MAX98357A-B_maxim_19-6779_rev7.pdf` (sha256 abac92d3…403e8cd9, from cdn-shop.adafruit.com), now read directly: SD_MODE B0 trip **0.08 / 0.16 / 0.355 V** (min/typ/max), internal pull-down RPD 92/100/108 kΩ, I²S VIH 1.3 V min, VIL 0.6 V max. With 1.0 kΩ the boot level is ≈ 0.07 V, guaranteed below B0 min, but only **10 mV** margin, and that rests on the 50 kΩ Pi pull-up assumption. Fix follows the ground decision: with the isolator, SD_MODE is driven by a default-low output referenced to GND_AUX and GPIO4 gets a 10 kΩ pull-down to GND_PI on side 1; without it, R19 drops to 470 Ω (≈ 0.033 V boot). Value not changed in this commit.
 
-**SD_MODE ground note:** the 1.0 kΩ pull-down returns to GND_AUX (amp side, scope l.17 "on the amp side"), so the GPIO4 path crosses domains through R9. That is a signal, not a ground join, and does not break cond. 1.
+**SD_MODE ground note:** superseded by U3. GPIO4 now ends at U3 IND on side 1 (GND_PI); AMP_SD_MODE is driven from side 2 (GND_AUX). No signal crosses the two grounds except through the isolation barrier.
+
+**U3 isolator check (Woz 2026-11-24) [SLLSEP4K] [19-6779 Rev 7].** Sources read: TI ISO774x datasheet SLLSEP4K (rev. August 2026), `shared/datasheets/ti_ISO7740_SLLSEP4K.pdf`; MAX98357A 19-6779 Rev 7 (above).
+- Part: **ISO7740FDBQR**, QSOP/SSOP DBQ-16, orderable and Active, marking 7740F [SLLSEP4K §11]. Pins: VCC1 1, GND1 2/8, INA 3 ← I2S_BCLK, INB 4 ← I2S_LRCLK, INC 5 ← I2S_AMP_DIN, IND 6 ← SD_MODE_PI, NC 7, GND2 9/15, EN2 10 → 5V_AUX, OUTD 11, OUTC 12, OUTB 13, OUTA 14, VCC2 16. C22 100 nF VCC1–GND1, C23 100 nF VCC2–GND2 (datasheet: 0.1 µF each side).
+- Speed: recommended DR ≤ 50 Mbps (100 Mbps max spec); I²S BCLK 3.072 MHz. 5 V tPLH/tPHL 6/12.7/17 ns, PWD ≤ 5.9 ns, same-direction skew tsk(o) ≤ 4 ns: < 2% of the 325 ns BCLK period, and BCLK/LRCLK/DIN share the package so they shift together. Meets ≥ 25 MHz.
+- Supplies: VCC1/VCC2 2.25–5.5 V operating, 6 V abs max. Side 1 3V3_PI; side 2 5V_AUX ≤ 5.16 V (top of the normal-rail corner used in f57293f) → 0.34 V under 5.5 V.
+- Default-LOW: F suffix outputs LOW when INx is open or VCC1 is unpowered; output undetermined only while VCCO is 1.7–2.25 V (5V_AUX ramp, amp is also below its supply range then). So: Pi boot/crash/3V3_PI loss → SD_MODE low → amp shutdown.
+- Input levels: U3 VIH 0.7 × VCCI = 2.31 V, VIL 0.3 × VCCI = 0.99 V. GPIO4 boot: Pi default pull-up (50 kΩ, assumption already noted above, not read) vs R35 10 kΩ → 3.3 × 10/60 = **0.55 V < 0.99 V** → reads LOW. Pi GPIO VOH not read (BCM2710 data not read); bench check: 3.3 V high reaches ≥ 2.31 V at U3.
+- Output into the amp: U3 VOH ≥ VCCO − 0.4 V at 4 mA, VOL ≤ 0.4 V at 4 mA (5 V table) vs amp VIH 1.3 V min / VIL 0.6 V max → ≥ 3.3 V and 0.2 V of margin.
+- **MAX98357A abs-max at 5V_AUX:** BCLK, LRCLK, DIN to GND −0.3 V to +6 V (independent of VDD) → U3 output ≤ 5.16 V: **0.84 V margin**. SD_MODE ("all other pins") −0.3 V to VDD + 0.3 V, ±20 mA continuous input current. U3 VCC2 and amp VDD are the same 5V_AUX, but amp VDD sits below HAT 5V_AUX by the J7 cable drop while the amp draws current, and is 0 V if the J7 5V contact opens. R34 2.0 kΩ bounds the pin current: J7 5V open, (5.16 − ~0.6 V diode, assumed) / 2.0 kΩ ≈ 2.3 mA; any partial drop is less. Well under ±20 mA. Left-channel level with R34: 5.16 × RPD/(RPD + R34) ≥ 5.16 × 92/94 = **5.05 V > B2 max 1.5 V** (worst case VOH 4.76 V at VCCO 5.16 V still > 1.5 V). Shutdown: U3 VOL ≤ 0.4 V at 4 mA, at ~0.05 mA into RPD it is far lower; datasheet does not give VOL at that load, so **bench check: AMP_SD_MODE < 0.08 V (B0 min) at boot with GPIO4 low**.
+- Not read: U3 price at qty 100 (LCSC C544482 search snippet says "from $0.9446", page not opened, so not a quote) and package mass (no mass in SLLSEP4K; DBQ-16 body is smaller than the 10.3 × 7.5 mm DW-16). Neither goes in the BOM until read.
+- Alt: TI ISO6740F is functionally equivalent (50 Mbps, default-LOW F, 2.25–5.5 V) [SLLSFJ6G, read] but only in DW-16 (10.30 × 7.50 mm), so it costs board area; listed as the alt. ISO644x (named by TI as smaller) not read.
 
 ## 4. Part list (draft; merges into `bom/bom_v1.0_delta.csv` at schematic freeze, no shadow spreadsheet)
 
@@ -158,7 +170,8 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | J5, J6 | 1×3 2.54 mm male header | 2 | generic | generic | — |
 | J7, J8 | 6-pin wire-to-board | 2 | JST SH/GH (**TBD**) | **TBD** | — |
 | R5–R9 | 100 Ω 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
-| R12, R13, R19, R20, R21 | 1.0 kΩ 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| R12, R13, R20, R21 | 1.0 kΩ 1% 0603 | 4 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| R19 | 1.0 kΩ 1% 0603 | 0 (DNP) | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | footprint kept, DNP with U3 |
 | R16–R18, R32, R33 | 10 kΩ 1% 0603 | 5 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R2, R3, R4, R4b | 324k / 111k / 459k / 102k, 0.1% 25 ppm 0603 | 4 | **TBD** (0.1% thin film) | **TBD** | — |
 | R1 | 33.2 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
@@ -168,6 +181,11 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | R26, R27 | 100 kΩ 1% 0603 | 2 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | Q1, Q2 | logic-level N-MOSFET, SOT-23 | 2 | **TBD** (2N7002 class; confirm R_DS(on) at V_GS = 3.3 V from the datasheet) | **TBD** | — |
 | U2 | I²C PWM/LED driver | 0 (DNP) | **TBD** (≥ 2 kHz, ≥ 8-bit) | **TBD** | footprint only, v1.1 |
+| U3 | 4-ch digital isolator, default-LOW | 1 | TI ISO7740FDBQR (DBQ-16) [SLLSEP4K] | TI ISO6740FDWR (DW-16, needs footprint change) [SLLSFJ6G] | price + mass not read |
+| R34 | 2.0 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| R35 | 10 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| R36–R38 | 100 Ω 1% 0603 | 3 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
+| C22, C23 | 100 nF X7R 0603 (U3 VCC1/VCC2) | 2 | **TBD** | **TBD** | — |
 | J9 | 3-pin wire-to-board | 1 | JST SH/GH (**TBD**) | **TBD** | — |
 | D_EYE | Ø5 single-colour TH LED | 2 | **TBD** (colour: Luxo) | **TBD** | off-board, in head |
 | R14, R15 | CPO_FB divider | 2 | 1.00 MΩ / 301 kΩ 0.1% 0603 (PN TBD) | — | values set [3226f] |
@@ -184,7 +202,7 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 2. ~~Eye-LED driver~~ set 2026-11-24 (J9 above). Remaining: LED colour/Vf and brightness → Luxo; U2 part → Woz at v1.1.
 3. ~~LTC3226 datasheet re-read~~ done from rev 3226f (2026-11-24), see §3. Remaining: 5V_PI_IN minimum under load vs the 4.82 V PFI upper bound → Atlas; 47 µF part DC-bias check → Woz at capture.
 4. ~~Foot inputs~~ set from Atlas's spec 2026-11-24 (§3). Atlas to confirm the kept 1 kΩ series R (press τ 0.09 ms).
-5. Amp I²S/SD_MODE return: Atlas did not ack; isolator proposed (§1), needs Woz + Atlas sign-off → before capture.
+5. ~~Amp I²S/SD_MODE return~~ ruled 2026-11-24: U3 ISO7740FDBQR isolator (§1, §3). Still open: U3 price + mass, J7 contact current rating, bench checks listed in the U3 check.
 6. ~~LTC3226 single source~~ ruled by Chief 2026-11-24: single-source for v1, 2 spares per build kit.
 7. Fasteners: HAT to Zero standoffs M2.5; torque spec **not yet defined** for M2.5 (only M2 is in the spec) → Woz, before mechanical green.
 
