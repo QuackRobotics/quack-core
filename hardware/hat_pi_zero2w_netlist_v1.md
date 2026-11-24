@@ -178,7 +178,7 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | R1 | 33.2 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R10, R11, R28–R31 | 0 Ω 0603 | 6 (R11, R30, R31 DNP) | generic | generic | — |
 | R22, R23 | 100 Ω 1% 0603 (FET gate) | 2 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
-| R24, R25 | LED current R, 0603 | 2 | value **TBD** (needs LED Vf) | — | at capture |
+| R24, R25 | LED current R, 470 Ω 1% 0603 | 2 | 470 Ω 1% (PN **TBD**) | **TBD** | value set (f57293f) |
 | R26, R27 | 100 kΩ 1% 0603 | 2 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | Q1, Q2 | logic-level N-MOSFET, SOT-23 | 2 | **TBD** (2N7002 class; confirm R_DS(on) at V_GS = 3.3 V from the datasheet) | **TBD** | — |
 | U2 | I²C PWM/LED driver | 0 (DNP) | **TBD** (≥ 2 kHz, ≥ 8-bit) | **TBD** | footprint only, v1.1 |
