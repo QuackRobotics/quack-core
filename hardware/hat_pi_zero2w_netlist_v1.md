@@ -145,6 +145,7 @@ Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode 
 **SD_MODE ground note:** superseded by U3. GPIO4 now ends at U3 IND on side 1 (GND_PI); AMP_SD_MODE is driven from side 2 (GND_AUX). No signal crosses the two grounds except through the isolation barrier.
 
 **U3 isolator check (Woz 2026-11-24) [SLLSEP4K] [19-6779 Rev 7].** Sources read: TI ISO774x datasheet SLLSEP4K (rev. August 2026), `shared/datasheets/ti_ISO7740_SLLSEP4K.pdf`; MAX98357A 19-6779 Rev 7 (above).
+
 - Part: **ISO7740FDBQR**, QSOP/SSOP DBQ-16, orderable and Active, marking 7740F [SLLSEP4K §11]. Pins: VCC1 1, GND1 2/8, INA 3 ← I2S_BCLK, INB 4 ← I2S_LRCLK, INC 5 ← I2S_AMP_DIN, IND 6 ← SD_MODE_PI, NC 7, GND2 9/15, EN2 10 → 5V_AUX, OUTD 11, OUTC 12, OUTB 13, OUTA 14, VCC2 16. C22 100 nF VCC1–GND1, C23 100 nF VCC2–GND2 (datasheet: 0.1 µF each side).
 - Speed: recommended DR ≤ 50 Mbps (100 Mbps max spec); I²S BCLK 3.072 MHz. 5 V tPLH/tPHL 6/12.7/17 ns, PWD ≤ 5.9 ns, same-direction skew tsk(o) ≤ 4 ns: < 2% of the 325 ns BCLK period, and BCLK/LRCLK/DIN share the package so they shift together. Meets ≥ 25 MHz.
 - Supplies: VCC1/VCC2 2.25–5.5 V operating, 6 V abs max. Side 1 3V3_PI; side 2 5V_AUX ≤ 5.16 V (top of the normal-rail corner used in f57293f) → 0.34 V under 5.5 V.
