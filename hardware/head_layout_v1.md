@@ -233,6 +233,8 @@ Bench / software-owner checks, all before this is called done:
 At −12 dBFS the AUX pair peak is 1.5 A (SG90 budget) + 0.10 A = 1.60 A, against a 2.76 A design.
 **Amp supply-current basis (Woz 2026-11-24 11:20, replaces the amplitude-scaled 1.27/0.64/0.32 A column).** The old column was the speaker-side peak current (3.59 Vrms / 4 Ω × √2 = 1.27 A), halved per −6 dB. That is load current, not what 5V_AUX supplies. The rail supplies power: I_peak = 2 × P_out / (η × 5 V) for a sine (instantaneous power peaks at 2× average), so it scales with power, ¼ per −6 dB. η = 0.85 is MY ASSUMPTION (MAX98357A efficiency curve not read); quiescent current not included. Result: 0 dBFS 1.51 A (was 1.27, so the old figure was LOW), −6 dBFS 0.38 A, −12 dBFS 0.10 A. Bench measurement replaces this.
 
+**MAX98357A absolute maximum ratings (read 2026-11-24, 19-6779 Rev 7 p.4, sha256 abac92d3…8cd9, razer `woz/datasheets/`).** Continuous current in/out of VDD/GND/OUT_: **±1.6 A**. Next to ILIM 2.8 A typ (p.5) this is a second reason for two J7 power pairs; the 1.51 A above is an instantaneous 0 dBFS peak (bench only), its average 0.75 A. VDD, LRCLK, BCLK and DIN to GND: **−0.3 V to +6 V**. U3 side-2 outputs at 5V_AUX (≤ 5.16 V) are inside it with 0.84 V margin, so no 3.3 V AUX rail is needed (closes Atlas's condition).
+
 **Listening indicator: use Luxo's eyes, no separate LED in v1.** Why:
 
 - A separate LED needs a new GPIO, a new window in the shell and a new part.

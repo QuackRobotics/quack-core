@@ -173,6 +173,7 @@ Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode 
 - Output into the amp: U3 VOH ≥ VCCO − 0.4 V at 4 mA, VOL ≤ 0.4 V at 4 mA (5 V table) vs amp VIH 1.3 V min / VIL 0.6 V max → ≥ 3.3 V and 0.2 V of margin.
 - **MAX98357A abs-max at 5V_AUX:** BCLK, LRCLK, DIN to GND −0.3 V to +6 V (independent of VDD) → U3 output ≤ 5.16 V: **0.84 V margin**. SD_MODE ("all other pins") −0.3 V to VDD + 0.3 V, ±20 mA continuous input current. U3 VCC2 and amp VDD are the same 5V_AUX, but amp VDD sits below HAT 5V_AUX by the J7 cable drop while the amp draws current, and is 0 V if the J7 5V contact opens. R34 2.0 kΩ bounds the pin current: J7 5V open, (5.16 − ~0.6 V diode, assumed) / 2.0 kΩ ≈ 2.3 mA; any partial drop is less. Well under ±20 mA. Left-channel level with R34: 5.16 × RPD/(RPD + R34) ≥ 5.16 × 92/94 = **5.05 V > B2 max 1.5 V** (worst case VOH 4.76 V at VCCO 5.16 V still > 1.5 V). Shutdown: U3 VOL ≤ 0.4 V at 4 mA, at ~0.05 mA into RPD it is far lower; datasheet does not give VOL at that load, so **bench check: AMP_SD_MODE < 0.08 V (B0 min) at boot with GPIO4 low**.
 - Not read: U3 price at qty 100 (LCSC C544482 search snippet says "from $0.9446", page not opened, so not a quote) and package mass (no mass in SLLSEP4K; DBQ-16 body is smaller than the 10.3 × 7.5 mm DW-16). Neither goes in the BOM until read.
+- Vendor-diverse candidate, **not on the BOM, not verified**: Skyworks Si8640BB-B-IU [Si864x 206329A, sha256 032aeb8b…ec07df] (QSOP-16, 4/0, default LOW, 2.5 kV). Woz read the §12 land pattern 2026-11-24: 5.40 / 0.635 / 0.40 × 1.55 mm vs TI DBQ0016A 5.4 / 0.635 / 0.41 × 1.6 mm, compatible on paper; the only pin table is headed "SOIC-16 Pin#", so the QSOP pin map is an inference. VIL 0.8 V max cuts the R35 boot margin to 0.25 V (still on the unread 50 kΩ pull-up).
 - Alt: TI ISO6740F is functionally equivalent (50 Mbps, default-LOW F, 2.25–5.5 V) [SLLSFJ6G, read] but only in DW-16 (10.30 × 7.50 mm), so it costs board area; listed as the alt. ISO644x (named by TI as smaller) not read.
 
 ## 4. Part list (draft; merges into `bom/bom_v1.0_delta.csv` at schematic freeze, no shadow spreadsheet)
@@ -202,7 +203,7 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | R26, R27 | 100 kΩ 1% 0603 | 2 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | Q1, Q2 | logic-level N-MOSFET, SOT-23 | 2 | **TBD** (2N7002 class; confirm R_DS(on) at V_GS = 3.3 V from the datasheet) | **TBD** | — |
 | U2 | I²C PWM/LED driver | 0 (DNP) | **TBD** (≥ 2 kHz, ≥ 8-bit) | **TBD** | footprint only, v1.1 |
-| U3 | 4-ch digital isolator, default-LOW | 1 | TI ISO7740FDBQR (DBQ-16) [SLLSEP4K] | TI ISO6740FDWR (DW-16, needs footprint change) [SLLSFJ6G] | price + mass not read |
+| U3 | 4-ch digital isolator, default-LOW | 1 | TI ISO7740FDBQR (DBQ-16) [SLLSEP4K] | TI ISO6440FDBQR (DBQ-16, same pinout, VIL 0.3 × VCCI) [SLLSG01D]: second source, same vendor, stock unknown: Naoufel checking | price + mass not read |
 | R34 | 2.0 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R35 | 10 kΩ 1% 0603 | 1 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
 | R36–R38 | 100 Ω 1% 0603 | 3 | YAGEO RC0603FR series | UNI-ROYAL 0603WAF series | — |
