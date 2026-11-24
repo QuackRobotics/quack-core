@@ -70,8 +70,9 @@ Chief's provisional budget: head ≤ +13 g over trained (≤ ≈419.6 g). Playgr
 |---|---|---|
 | CM3 + bracket net | +10 (0…+10) | (1, 0, −51) |
 | HAT + 2 caps | +18 | (17, 47, 6) |
-| amp + mic, left wall | +4 | (9.9, 79.2, 25) |
-| **Itemised centroid** | **+32** | **(11.1, 36.3, −9.4)** |
+| amp breakout, right by speaker (head_layout_v1 l.93) | +2 | (10, −45, 25) |
+| mic, left wall (head_layout_v1 l.121) | +2 | (9.9, 74.5, 25) |
+| **Itemised centroid** | **+32** | **(11.1, 28.3, −9.4)** |
 | Implied by 406.6 → 438.6 CoM | +32 | (10.3, 28.4, −9.2) |
 
 Hinton's (10.3, +38.1, −1.6) matches in x, is 2–10 mm further +y and ≈8 mm higher in z. The 1.8–8 mm gap between my two rows is rounding in the published CoM values. Recommend the final candidate (414.2 g, CoM above) as a full-body row, not a point mass.
@@ -80,3 +81,41 @@ Hinton's (10.3, +38.1, −1.6) matches in x, is 2–10 mm further +y and ≈8 mm
 - Waveshare Bus Servo Adapter (A): 16 g, Waveshare product page. Not bought; our trunk IMU-to-servo board replaces it. Its mass in Playground's 0.698526 kg trunk: Hinton can read it; I have not.
 - Our trunk IMU-to-servo board: not laid out, no mass.
 - Zero Robot HAT (head): ≈11.8 g at 1.6 mm (FR4 5.8 + header 3 + parts 3), ≈9.6 g at 1.0 mm. Woz estimates.
+- Waveshare board mass/CoM inside the trunk: not read (no Onshape access). Weigh it on the 0.1 g scale when one is on the bench (Chief 2026-11-24).
+
+## Rows for Hinton, full inertia (Woz 2026-11-24, `hardware/tools/headrow.py`, `headopts.py`)
+Point-mass deltas on the trained head (Playground `head_assembly` @ f698836 = b9be205: 406.607 g, CoM (8.154, −3.908, 22.773) mm). Inertia about the CoM in the head_assembly frame, kg·m², MJCF fullinertia order Ixx Iyy Izz Ixy Ixz Iyz. Removed parts are negative point masses (their own inertia ignored). All masses and positions are Woz estimates; nothing weighed.
+
+| Row | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
+|---|---|---|---|---|
+| B 421.2 (cuts 1, 2, 3, 5, 6) | 421.24 | (8.237, −1.685, 20.596) | (+0.08, +2.22, −2.18) | 2.52161e-3 1.74306e-3 1.10197e-3 −8.31130e-6 8.90054e-5 −1.01245e-5 |
+| A 414.2 (+ cut 4) | 414.24 | (8.360, −1.714, 21.806) | (+0.21, +2.19, −0.97) | 2.48510e-3 1.70620e-3 1.10158e-3 −8.39812e-6 9.26939e-5 −1.09834e-5 |
+| 411.2 (A + amp on HAT + header), DROPPED, fails y | 411.2 | (8.33, −1.62, 21.83) | (+0.18, +2.29, −0.94) | 2.47870e-3 1.70584e-3 1.09538e-3 −8.12032e-6 9.25675e-5 −1.20290e-5 |
+| **410.0**: A + header, mic → right wall, amp breakout → right wall, HAT parts + FR4 (6.6 g) → trunk, 3.88 g ballast | 410.02 | (8.205, −4.200, 22.148) | (+0.05, −0.29, −0.62) | 2.48560e-3 1.70356e-3 1.10351e-3 −3.83553e-6 9.15456e-5 −1.55733e-5 |
+| **407.4**: as 410.0, but all HAT mass (8.1 g) → trunk, 2.75 g ballast | 407.39 | (8.167, −4.200, 22.200) | (+0.01, −0.29, −0.57) | 2.47606e-3 1.70304e-3 1.09425e-3 −3.29793e-6 9.13375e-5 −1.70325e-5 |
+
+- **Y_RIGHT = −72 mm assumption (410.0 and 407.4 rows):** the amp breakout and the ballast sit at (10, −72, 25), my estimate of the inner right wall, mirrored from the mic wall. Not ray-cast against the head shell. Mic mirrored to (9.9, −74.5, 25). Ballast for y −4.2 is grams = m·(y − (−4.2)) / (−4.2 − Y_RIGHT); a wall 1 mm further in adds ≈0.06 g.
+- Not counted in either row: neck pigtail/connector mass that replaces the board in the head.
+- Hinton's lateral band (via Chief 2026-11-24): Δy ∈ [−1.55, +1.0] mm, absolute y −5.46 … −2.91 mm; aim y −4.2 so the ±0.6 mm centroid uncertainty fits.
+
+## HAT-to-trunk option: neck conductors (scoping, not a change)
+Today the 12-pin JST-GH signal connector carries 11 of 12: SDA, SCL, 2 twist GNDs, 3V3 (I²C); GPIO22, GPIO27, foot GND; SW_EN (GPIO17); INA226 ALERT; projector gate GPIO25. Power stays on the Micro-Fit 2×2 (PI pair, AUX pair); the STS bus and USB are separate leads.
+
+| HAT function | If moved to the trunk | Extra neck conductors |
+|---|---|---|
+| LTC3226 hold-up controller, PFO → GPIO6 | Controller next to the caps (already trunk, cut 2) | **+1** |
+| LTC3226 PGOOD → CAPGOOD GPIO5 | as above | **+1** |
+| Held-up 5 V to the Pi | rides the existing PI pair | 0 |
+| INA226 ALERT 10 kΩ pull-up | to trunk, line already crosses | 0 |
+| SG90 PWM GPIO12/13 1 kΩ series | in-line at the SG90 lead, head | 0 |
+| I²S GPIO18–21 + SD_MODE 100 Ω, SD_MODE pull-down | onto the amp/mic breakouts, head | 0 |
+| Eye LEDs GPIO23/24 | head loads | 0 |
+
+- **Result: 13 conductors against 12. Over by 1.**
+- Ways back inside: (a) JST-GH 14-pin (GH is made in 2–15 circuits, 1 A at AWG 26, JST GH series page): 13/14, 1 spare. (b) BNO055 UART mode (harness fallback 1) frees 1: 12/12, no spare. (c) Keep the LTC3226 in the head: 0 extra, but that mass stays at y +47 and the 410.0/407.4 rows no longer hold.
+- Side effects to check before any decision: the PFI trip (4.70 V, sensed on the HAT today) would sense on the trunk side of the 21 mΩ PI pair, so the 0.045 V drop has to be added back into the setpoint; the head loses its board, so the neck harness needs an in-line connector or a pigtail soldered to the Pi header, with its own strain relief; the 1,000-cycle flex test would log 20 conductors (13 signal + 4 power + 3 STS bus), not 18.
+
+## Mechanical-green additions (Atlas condition, Chief accepted 2026-11-24)
+- [ ] **Head mass, weighed:** the assembled head (all parts, glue, cables up to the neck connector) on a 0.1 g scale is ≤ trained + 8 g = **≤ 414.6 g**. CAD numbers don't count.
+- [ ] **Head CoM y, measured:** two-point hang or knife-edge balance on the assembled head. The method must resolve y to better than ±0.5 mm, and the result must land inside Hinton's band (absolute y −5.46 … −2.91 mm, head_assembly frame). Record the method, repeat count and spread.
+- Plan of record: low-profile 40-pin header. The amp-to-HAT cut is dropped (fails the y band, rows above).
