@@ -5,6 +5,7 @@ Status: **DRAFT, not a schematic.** KiCad 9 is not installed on the Team Compute
 Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capacitor, `U` = IC, `TP` = test pad. Header pins = Pi 40-pin physical numbers, BCM names.
 
 ## 1. Ground domains (Atlas harness cond. 1 + 2)
+
 - **GND_PI**: Pi ground. Header pins 6, 9, 14, 20, 25, 30, 34, 39; neck I²C twist GNDs; foot GND; LTC3226 GND.
 - **GND_AUX**: SG90s + MAX98357A return only. Enters on J2 pin 4, goes to J5/J6/J7 only.
 - **GND_PI and GND_AUX never join on this board** (they join only at the TPS56637 output in the trunk). Schematic: two separate ground symbols, no net-tie; DRC: keep-out between pours. ERC will need to accept two power-ground nets.
@@ -13,6 +14,7 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 ## 2. Connectors and pinouts
 
 ### J1: Pi 40-pin header, low-profile female 2×20, 2.54 mm (plan of record, head_grams_v1 l.124)
+
 | Pin | BCM | Net |
 |---|---|---|
 | 2, 4 | — | 5V_PI_HOLD (LTC3226 VOUT, wide pour to both, Atlas layout rule) |
@@ -37,6 +39,7 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 | 19, 21, 23, 24, 26 | 10, 9, 11, 8, 7 | NC, kept free (SPI0, future display/eye driver) |
 
 ### J2: neck power entry, Molex Micro-Fit 3.0, 2×2 (harness_neck_v1 l.21)
+
 | Pin | Net | Wire | Load (harness_neck_v1) |
 |---|---|---|---|
 | 1 | 5V_PI_IN | 18 AWG | 2.16 A |
@@ -47,7 +50,9 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 Per-pin ≤ 2.76 A design. Terminal rating and an 18 AWG crimp: **confirm at schematic** (not read from the Molex datasheet). Strain relief on the trunk side of the neck pitch joint.
 
 ### J3: neck signal connector, JST-GH 12-pin (Atlas + Chief ack 2026-11-24): 11 used, 1 spare
+
 Order chosen by Woz: each I²C line next to its own return; slow GPIOs grouped; SW_EN away from the I²C clock.
+
 | Pin | Net | Notes |
 |---|---|---|
 | 1 | I2C_SDA | twisted with 2 |
@@ -66,25 +71,31 @@ Order chosen by Woz: each I²C line next to its own return; slow GPIOs grouped; 
 Neck total = 4 (J2) + 11 (J3) + 3 (STS bus, own Feetech lead) = **18**, matching the 1,000-cycle flex test (harness_neck_v1 l.46).
 
 ### J4: supercap stack, 2-pin (only if caps-to-trunk is chosen; footprint both options, pick at freeze)
+
 SCAP_TOP, GND_PI. Default (caps on HAT): C10/C11 fitted, J4 DNP.
 
 ### J5 / J6: SG90 left / right, 3-pin 2.54 mm (SG90 order: PWM, +, −)
+
 PWM via R12/R13; 5V_AUX; GND_AUX.
 
 ### J7: amp breakout (MAX98357A, off-board, right wall; harness cond. 2)
+
 5V_AUX, GND_AUX, I2S_BCLK, I2S_LRCLK, I2S_AMP_DIN, SD_MODE. 6 pins, JST-SH or GH (pick at schematic). The amp's logic reference is GND_AUX; its ground joins GND_PI only in the trunk. **Flag for Atlas:** I²S edges then return through the trunk loop, ~1 m. The 100 Ω series resistors slow the edges; bench check: no I²S errors and no audible clicks at 48 kHz.
 
 ### J8: mic (INMP441, BOM line 22, left wall)
+
 3V3_PI, GND_PI, I2S_BCLK, I2S_LRCLK, I2S_MIC_DATA, L/R (tie to GND_PI on the module = left). 6 pins.
 
 ### J9: eye LEDs, 3-pin (Luxo eye_anim_constraints @ 9770686 + Chief 2026-11-24: one plain single-colour Ø5 LED per eye, Jewel not in v1)
+
 Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode → R24/R25 (LED current R, value at capture from the chosen LED's Vf; target ≤ 10 mA per LED, Woz default, both eyes ≤ 20 mA, well under Luxo's 0.25 A clamp) → Q1/Q2 drain; Q1/Q2 source GND_PI. Gate pull-down R26/R27 100 kΩ to GND_PI (eyes off while GPIO23/24 float at boot).
+
 - **Why a transistor, not direct GPIO:** GPIO load stays at gate leakage only, LED current comes from 5 V not the Pi 3V3 rail, and v1.1 PWM can drive the same FETs. I did not read a Pi GPIO current-limit datasheet, so I am not sizing a direct-drive R against one.
 - **v1:** on/off/blink on the 20 ms tick, plain GPIO writes.
 - **v1.1 PWM, footprint reserved:** GPIO23/24 are not hardware-PWM pins and PWM/PCM are taken (antennas, I²S), so ≥ 8-bit at ≥ 2 kHz needs an external driver. U2 = I²C PWM/LED driver, **DNP**, on the neck I²C bus (3V3_PI, GND_PI); outputs → R30/R31 (0 Ω **DNP**) → Q1/Q2 gate; to switch, fit R30/R31 and remove R28/R29. U2 PN **TBD**; requirements: ≥ 2 channels, ≥ 8-bit (10-bit preferred), PWM ≥ 2 kHz, I²C address clear of the BNO055, 3.3 V. Not chosen: I have not read a candidate datasheet. From memory the PCA9685 tops out below 2 kHz, so it must be checked before it is considered.
 
-
 ## 3. Power-path netlist (U1 = ADI LTC3226EUD, 16-QFN 3×3; values from BOM line 10 + harness_neck_v1 l.67–72)
+
 | Net / node | Parts | Value | Basis |
 |---|---|---|---|
 | 5V_PI_IN → U1 VIN | C1, C2 | 10 µF + 100 nF, X5R 10 V 0603/0805 | decoupling, Woz default |
@@ -112,6 +123,7 @@ Pin 1 EYE_A (common anode, 5V_PI_HOLD) / pin 2 EYE_L_K / pin 3 EYE_R_K. Cathode 
 **SD_MODE ground note:** the 1.0 kΩ pull-down returns to GND_AUX (amp side, scope l.17 "on the amp side"), so the GPIO4 path crosses domains through R9. That is a signal, not a ground join, and does not break cond. 1.
 
 ## 4. Part list (draft; merges into `bom/bom_v1.0_delta.csv` at schematic freeze, no shadow spreadsheet)
+
 Every line needs an alt before freeze. PNs marked **TBD** have not been looked up; none is invented.
 
 | Ref | Part | Qty | Primary | Alt | Status |
@@ -146,6 +158,7 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 | PCB | 65 × 30 mm, 2-layer, 1.0 mm FR4, 4× M2.5 on 58 × 23 mm | 1 | JLCPCB | **TBD** second fab | outline re-check vs official Zero drawing |
 
 ## 5. Open items before capture (owner → due, Paris)
+
 1. KiCad 9 on the Team Computer **or** razer access: Naoufel (Chief asked 12:17) → blocks capture + ERC.
 2. ~~Eye-LED driver~~ set 2026-11-24 (J9 above). Remaining: LED colour/Vf and brightness → Luxo; U2 part → Woz at v1.1.
 3. ~~LTC3226 datasheet re-read~~ done from rev 3226f (2026-11-24), see §3. Remaining: 5V_PI_IN minimum under load vs the 4.82 V PFI upper bound → Atlas; 47 µF part DC-bias check → Woz at capture.
@@ -155,4 +168,5 @@ Every line needs an alt before freeze. PNs marked **TBD** have not been looked u
 7. Fasteners: HAT to Zero standoffs M2.5; torque spec **not yet defined** for M2.5 (only M2 is in the spec) → Woz, before mechanical green.
 
 ## 6. Done-condition (unchanged from scope)
+
 Pin map accepted by Chief + Atlas, **ERC clean**, DRC at JLCPCB 2-layer rules, BOM lines with an alt each, 3D clearance against head_layout_v1. No board ordered without Naoufel's yes.

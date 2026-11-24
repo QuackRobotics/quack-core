@@ -6,7 +6,9 @@ Woz, 2026-11-23 02:45 Paris. Status: PROPOSED. It needs Atlas and Luxo sign-off,
 
 All positions are in the robot.xml `head_assembly` frame, in mm: +x is up, −z is forward. The print-frame to head transform comes from the `head` geom in robot.xml at b23317a: pos (−0.12906, 0, 0.06095), quat (0.707, 0, 0.707, 0). It gives
 
-    x_h = z_print − 129.06,  y_h = y_print,  z_h = 60.95 − x_print
+```text
+x_h = z_print − 129.06,  y_h = y_print,  z_h = 60.95 − x_print
+```
 
 This is the same transform Luxo derived. The outer front face is at z = −59.05 and the inner face is at z = −56.1, so the wall is 3 mm thick.
 
@@ -36,7 +38,9 @@ The upstream head has no geometry in front of the face plane. With the lens at x
 
 For a new beak: the camera tilts 15° up and the vertical half-FOV is 20.5°, so the lower edge of the view runs 5.5° below horizontal. The lens aperture radius is 2.9 mm. The beak's top surface must stay below
 
-    x <= -2.9 - 0.096 * d   (d = mm forward of the face)
+```text
+x <= -2.9 - 0.096 * d   (d = mm forward of the face)
+```
 
 That means x ≤ −2.9 at the face, ≤ −4.8 at 20 mm forward and ≤ −6.7 at 40 mm forward. A beak whose top root is at x ≈ 0 would show at the bottom of the image.
 
@@ -211,6 +215,7 @@ Hinton quoted 30.6 g + 4.3 g for the same two parts. Recomputed two independent 
 ```
 
 Bench / software-owner checks, all before this is called done:
+
 1. `dtc -@ -I dts -O dtb` compiles it. `modinfo snd-soc-ics43432 snd-soc-max98357a` shows both modules in the shipped kernel.
 2. The kernel accepts a multi-codec link in simple-audio-card. If it doesn't, fall back to `googlevoicehat-soundcard`, which is Google's MAX98357A + ICS-43432 design. Its overlay drives SD_MODE on **GPIO16**, so our GPIO4 would need a param or a fork.
 3. `aplay` + `arecord -f S32_LE -r 48000 -c 2` run at the same time. Scope BCLK: 3.072 MHz. The mic data is in the left slot.
@@ -228,8 +233,8 @@ Bench / software-owner checks, all before this is called done:
 At −12 dBFS the AUX pair peak is 1.5 A (SG90 budget) + 0.10 A = 1.60 A, against a 2.76 A design.
 **Amp supply-current basis (Woz 2026-11-24 11:20, replaces the amplitude-scaled 1.27/0.64/0.32 A column).** The old column was the speaker-side peak current (3.59 Vrms / 4 Ω × √2 = 1.27 A), halved per −6 dB. That is load current, not what 5V_AUX supplies. The rail supplies power: I_peak = 2 × P_out / (η × 5 V) for a sine (instantaneous power peaks at 2× average), so it scales with power, ¼ per −6 dB. η = 0.85 is MY ASSUMPTION (MAX98357A efficiency curve not read); quiescent current not included. Result: 0 dBFS 1.51 A (was 1.27, so the old figure was LOW), −6 dBFS 0.38 A, −12 dBFS 0.10 A. Bench measurement replaces this.
 
-
 **Listening indicator: use Luxo's eyes, no separate LED in v1.** Why:
+
 - A separate LED needs a new GPIO, a new window in the shell and a new part.
 - A software-driven LED proves no more than an eye state does: the INMP441 is always powered from 3.3 V, so neither one is a hardware guarantee.
 - Recommendation: Luxo owns a distinct "listening" eye pattern. If a hardware privacy guarantee is wanted later, put a GPIO-switched load switch on the mic 3V3 (about 1.4 mA) and tie the indicator to that same switch. That is v2.

@@ -67,6 +67,7 @@ Proposed by Woz, signed off by Atlas 02:24, decided by Quack Chief 02:26. The Po
 ## Backup mode (LTC3226): setpoints and Vmin bench (Atlas ack 2026-11-23)
 
 Setpoints (Atlas acked; detail and tolerance stack in BOM line 10):
+
 - Backup LDO **4.40 V** nominal, 0.1% divider: 4.29–4.51 V over LDO_FB 0.76–0.82 V.
 - PFI trip **4.70 V** nominal, 0.1% divider: trips 4.60–4.80 V, always above the LDO high corner (4.51 V); releases at ≤ 4.88 V, below the HAT minimum (≥ 4.99 V at 5.10 V regulator setpoint).
 - Gate in backup = "the Pi stays up and the sync finishes", not the 4.63 V under-voltage flag.
@@ -82,6 +83,7 @@ Hold-up and the load current behind it (5 F stack, LDO path 0.26 Ω = 0.2 Ω pas
 - Both loads are Woz budgets (Pi Zero 2W 1.5 A design + camera 0.3 A), not measurements. The bench below replaces them.
 
 Vmin bench (Atlas conditions, all must pass before the 4.40 V LDO is locked; 10 boards):
+
 1. **Real load, not a resistor.** Each board runs the flight load while its 5 V input is ramped down 5.0 → 4.0 V: log writer active with fsync, sync triggered, camera streaming and then stopped by the PFO handler, CPU loaded (all 4 cores). Record the voltage at which the Pi browns out (reset/hang) and whether the sync completed.
 2. **Pass: the sync finishes at ≤ 4.25 V on all 10 boards.** One board needing more than 4.25 V fails the 4.40 V LDO plan → fall back to 2S2P supercaps (10 F, ESR halves) plus load shed, or a buck-boost backup (BOM line 10 item d).
 3. **Sync timed while the under-voltage flag is set.** At 4.40 V the Pi is below its 4.63 V flag and throttles, so PFO-to-fsync-complete time is measured in that throttled state (vcgencmd get_throttled bit 0 set), not at 5 V. Worst of 10 boards must be ≤ 0.26 s (2× margin on 0.53 s).
@@ -102,6 +104,7 @@ Shared path from cells to the regulator tap (the regulator feed is starred at th
 | **Total** | **≈ 46 mΩ** | **≈ 60 mΩ** | |
 
 At the 23.9 A clamped stand-up worst case:
+
 - Sag = 1.10 V nominal, 1.43 V worst.
 - From a 7.2 V rest pack: 6.10 V nominal, 5.77 V worst. Both are below the 6.3 V loaded floor; the worst case is at the regulator's cold dropout.
 - **So the 7.2 V rest block must rise.** Required rest voltage = 6.3 V + 23.9 A × R: 7.40 V nominal, 7.73 V worst.
@@ -115,6 +118,7 @@ At the 23.9 A clamped stand-up worst case:
 ## Power-fail safe stop (Atlas, settled 2026-11-23; Quack Chief)
 
 On PFO (GPIO6) the handler executes **torque off within one 20 ms control tick**, in this order (all three are issued in the same tick):
+
 1. Broadcast torque-disable on the STS bus (ID 0xFE, Torque_Enable addr 40 = 0).
 2. Open the servo-power switch (same GPIO as the e-stop). Stop the SG90 PWM on GPIO12/13 (drive low, no pulses: SG90 goes limp).
 3. Pull SD_MODE (GPIO4) low: amp muted.
@@ -157,6 +161,7 @@ Status: requirements only; the parts are chosen at schematic time (Woz). Atlas o
 **Design current.** 14 STS servos all stalled at the 8.4 V full pack, unclamped: 14 × 2.8 A = **39.2 A** on the switched servo rail (2.8 A = FEETECH 2.0 A @ 6 V scaled to 8.4 V, i.e. ≈ 3.0 Ω per stalled servo; Woz estimate, not measured). Upstream of the 5 V tap (pack, fuse, BMS, pack connector) add the TPS56637 input at 8.4 V: 4.9 A × 5.1 V / 0.913 / 8.4 V = 3.26 A → **42.5 A**.
 
 This is a fault bound, not an operating point:
+
 - It is an ideal-source figure. With the shared pack path in series (46 mΩ nominal / 60 mΩ worst, table above), 14 × 3.0 Ω stalled draws only **32.3 A / 30.6 A** (Woz calc).
 - It cannot persist: the BMS OCD trip is 28 A nominal ±10 % (25.2–30.8 A, line 8), and the 4 hip yaw/roll servos are clamped at 1.0 A (clamped stand-up worst case 23.9 A).
 - So the sizing rule below is: **continuous rating ≥ 30.8 A** (the BMS upper trip corner) and **short-time rating ≥ 42.5 A for the BMS OCD delay**. The delay value isn't known until the BMS is chosen; assume ≤ 1 s and bench it.
@@ -253,6 +258,7 @@ Inputs, unchanged from the table above: 5 F stack, LDO path 0.26 Ω (0.2 Ω pass
 Option A (caps AND LTC3226 in the trunk, backup output rides the PI pair up): the window stays 0.53 s, but the Pi sees the LDO output minus 1.8 A × 21 mΩ = 0.038 V. At the 4.29 V LDO low corner that is **4.252 V at the Pi against the 4.25 V sync gate: 2 mV margin before any contact R. Fails.** Raising the LDO to buy it back eats the same 0.04 V from the window (≈0.42 s) and squeezes the PFI-low (4.60 V) vs LDO-high margin to ~50 mV. A is no better than B and is rejected.
 
 Consequences of B:
+
 - SD-sync budget (half of hold-up) drops from 0.26 s to **0.21 s** (0.16 s if contacts add 20 mΩ). Vmin bench pass 3 becomes "worst of 10 ≤ 0.21 s", throttled.
 - Neck conductors +2 (VCAP, cap GND), +1 more if the stack midpoint/balance node must also cross; I have not confirmed the LTC3226 balance-pin arrangement from the ADI datasheet (fetch failed today). 16 → 18–19 conductors through ±160° head yaw.
 - Cap pair carries the 0.36 A charge current in normal running and 1.8 A in backup; 18 AWG matches the PI pair.

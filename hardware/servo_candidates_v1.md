@@ -150,26 +150,31 @@ Source: FEETECH STS/SMS control table as used by LeRobot (`STS_SMS_SERIES_CONTRO
 | Present_Voltage / Present_Current | 62 / 69 | SRAM | Read-back. |
 
 **Consequence for the clamp (and for Hinton's low-V verdict):**
+
 - Neither register is a true regulating current limit. Protection_Current used alone would turn the hip servos **off** at 1.0 A (a fall), so it cannot be "the clamp".
 - The clamp is the **duty limit**. At stall the STS3215 behaves as ≈ 3.0 Ω (7.4 V / 2.47 A, same as 6 V / 2.0 A), so I_max ≈ duty × V_pack / 3.0 Ω. A fixed duty therefore gives a current (and torque) cap that **falls with pack voltage**: set for 1.0 A at 8.4 V (duty 35.7 %, value 357) it allows only 0.75 A at 6.3 V.
 - **A fixed EEPROM duty clamp = Hinton's "literal −20 %" case, which FAILS.** The "clamp-kept" case (which passes by 0.0007 m/s) needs a constant current cap.
 
 **Implementation I propose (both layers, needs Atlas ack):**
+
 1. EEPROM Max_Torque_Limit (16) = **357** on the 4 clamped servos: 1.0 A at the 8.4 V full pack, so the cap is safe at power-on and if the controller dies (Atlas's EEPROM requirement).
 2. Control loop rewrites SRAM Torque_Limit (48) each 20 ms tick: duty = 1.0 A × 3.0 Ω / V_pack (Present_Voltage, filtered), clamped to ≤ 1000, so the cap stays ≈ 1.0 A (≈ 0.88 Nm) at any pack voltage = Hinton's "clamp-kept".
 3. EEPROM Protection_Current (28) as a backstop trip **above** the clamp (≈ 1.4 A; unit is reported as 6.5 mA/LSB → ≈ 215, to be bench-confirmed), so a stuck SRAM write cannot reach the BMS trip.
+
 - Margin is 0.0007 m/s, i.e. none. A 3.0 Ω estimate that is 5 % off moves the cap by 5 %. Bench: one STS3215 on the torque arm at 6.3 / 7.4 / 8.4 V, log Present_Current at each Torque_Limit value, before this is signed.
 - **Speed dependence of the clamped cap (corrected 2026-11-23).** Under a duty cap the cap falls with speed: τ ≈ 0.876 × (1 − ω/ω_c) Nm. ω_c ≈ **2.0 rad/s**: 1.99 if the 0.15 A no-load current is kept as a torque loss at both ends (5.78 × 3.0/7.4 × 0.85), or 2.02 with Chief's τ_cap/τ_stall × ω0 (0.88 × 5.43/2.36). That's a 1.5 % model difference. With the per-tick rescale ω_c is independent of V_pack. The 2.17 rad/s in an earlier Woz message is withdrawn: it was 0.40 × 5.43 and ignored the no-load current.
 
 ## 0.864 vs 0.876 Nm, and bench additions 1–3 (Woz 2026-11-23 10:40 Paris)
 
 **Where the two figures come from.** Both use τ = Kt × (I − I0) with I = 1.0 A and I0 = 0.15 A, so I − I0 = 0.85 A. They differ only in Kt:
+
 - **0.876 Nm:** Kt from the FEETECH datasheet point at 6 V: 1.91 Nm / (2.0 − 0.15) A = 1.032 Nm/A (the "0.97 A/Nm" slope). 1.032 × 0.85 = 0.877, quoted as 0.876 from (1.0 − 0.15) / 0.97.
 - **0.864 Nm:** Kt from the *derived* 7.4 V point: 2.36 Nm / (2.47 − 0.15) A = 1.017 Nm/A. 1.017 × 0.85 = 0.864. Written with Kt rounded to 1.02 it is 1.02 × 0.85 = **0.867**, not 0.864. The 0.864 needs the unrounded 1.017.
 - **Why they differ.** The 7.4 V point scales stall current and stall torque by 7.4/6 but keeps I0 at 0.15 A. If I0 is scaled too, Kt comes back to 1.032 and τ to 0.878. Kt is a motor constant and doesn't change with voltage, so **0.876 is the model-consistent value**. The 1.5 % gap is an artifact of the derived point, and it's the same 1.5 % as the ω_c 1.99 vs 2.02 above.
 - **Which one is conservative.** 0.876 is conservative against the retracted 1.31 Nm, but **0.864 is 1.4 % lower still**. With a stated margin of 0.0007 m/s, that 1.4 % may flip the verdict. Recommendation: Hinton reports go/no-go at both 0.876 and 0.864. If they disagree, the decision waits for bench item 1. Neither number is measured.
 
 **Bench additions 1–3 (approved by Chief):**
+
 1. **Stall current + torque at 6.3 / 7.4 / 8.4 V.** One STS3215-C001 on the torque arm, ≥ 6 load points from 0 to stall at each voltage. Log Present_Current (addr 69) and an external shunt, and the torque from the arm's load cell. Output: Kt, I0 and stall R per voltage. This settles 0.864 vs 0.876, the 3.0 Ω stall figure behind the duty rescale, and the 2.8 A per-servo figure behind the 39.2 A sizing.
 2. **8.4 V cold-start peak.** Full pack (8.4 V rest), cold servos, switch soft-start, then torque-enable all 14 servos in one broadcast at the stand-up pose. Scope pack current at the INA226 shunt (≥ 100 kS/s) and the switched rail. Pass: peak < 25.2 A (the BMS low corner), no BMS trip, and switched rail ≥ 6.3 V after 50 ms. Repeat 10×.
 3. **Over_Current_Protection_Time (addr 38) behaviour.** Protection_Current (addr 28) at 215 counts (≈ 1.4 A if 6.5 mA/LSB holds). Sweep addr 38 over at least 3 values and stall the servo above 1.4 A. Record the time from crossing to unload, what Present_Current reads, whether the servo re-arms by itself, and the status/error bits. Also confirm that with Max_Torque_Limit 357 and the per-tick rescale active, a normal stand-up never trips addr 28.
@@ -189,6 +194,7 @@ Option B (Naoufel 2026-11-22 22:32) = **STS3046 (ST-3046-C001)** on 2 knees, 2 h
 Labels: the doc's earlier decision labels are now **(S1) STS3046 on 2S** and **(S2) STS3250 on 3S**, so they no longer collide with Naoufel's "option B" (stronger knee/hip-pitch servos, no retrain).
 
 **At what voltage is 0.22 s/60° rated? 7.4 V.** FEETECH's own table, mirrored on the [FEETECH wiki ST-3046-C001 page](https://ftservo.github.io/ftservo-wiki/en/products/models/st-3046-c001/main/) ("FEETECH official product page, checked 2026-10-02"): *No load speed 0.22 sec/60° @7.4V*, 300 mA no-load @7.4 V, 40 kg·cm stall @7.4 V, 3.1 A stall @7.4 V, operating range 6–7.4 V (the attached PDF says 4–8.4 V; FEETECH flags the conflict). [ZennixTek](https://www.zennixtek.com/products/feetech-sts3046-servo-motor) repeats 0.22 s/60° @7.4 V.
+
 - 60°/0.22 s = **4.76 rad/s at 7.4 V**, which is the top of its rated range. Hinton's 4.76 rad/s is the right datasheet figure.
 - STS3215-C001 at 7.4 V, 5.43 rad/s, is itself an **estimate** (0.238 s/60° @6 V datasheet, scaled linearly to 7.4 V). On the same basis the STS3046 is ~12 % slower at 7.4 V and, scaled down to 6.6 V, ~4.2 rad/s (est.).
 - So the STS3046 trades speed for torque. If every Hinton torque–speed run fails the speed bar, **the STS3046 does not meet option B as stated (no retrain)** and I would not lock it. No other 2S FEETECH STS part in the screen above is both stronger and as fast. The 12 V parts need 3S (S2), which reopens the power sign-off. Decision: Chief/Naoufel, with Hinton's runs as the gate.

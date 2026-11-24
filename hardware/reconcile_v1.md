@@ -5,6 +5,7 @@ Paper only. No parts in hand (Naoufel 2026-11-23). Sources are named per line; "
 ## 1. 5 V peak 4.4 A vs 4.7 A, and clamp 1.0 A vs 1.3 A
 
 **5 V rail.** Both figures are superseded UBEC-era sums (servo_candidates_v1 "UBEC sizing", 2026-11-22 22:50):
+
 - 4.4 A = Pi 1.5 + LTC3226 0.36 + 2× SG90 1.5 + MAX98357A **1.0 A (my early guess)**.
 - 4.7 A = the same sum with the amp at its derived 0 dBFS peak, **1.27 A** (9 dB gain, 3.59 Vrms into 4 Ω; head_layout_v1 "Audio driver"): 4.4 − 1.0 + 1.27 = 4.67 A.
 - Neither has the camera (0.30 A budget), eyes, projector or Jewel 7.
@@ -18,6 +19,7 @@ Paper only. No parts in hand (Naoufel 2026-11-23). Sources are named per line; "
 ## 2. BMS worst case 26 A vs 30.9 A
 
 Both superseded by the one consistent set in BOM line 8 (2026-11-23 01:45). They differed only in assumptions:
+
 - 26 A = only hip roll near stall + 5 V rail 4.4 A, regulator input taken at 7.4 V.
 - 30.9 A = all 4 non-swapped leg servos at stall + 4.7 A rail, input at 6.6 V sag.
 
@@ -35,6 +37,7 @@ Separate bound, not a BMS case: **39.2 A all-14-at-stall** (14 × 2.8 A est. + 3
 ## 3. Pololu D36V50F5 (bring-up only, harness_neck_v1: the policy never runs on it)
 
 Read from [pololu.com/product/4091](https://www.pololu.com/product/4091) on 2026-11-24 09:54 UTC, graphs read by eye (±0.2 A / ±1 %):
+
 - **Price: US$44.95 at qty 1. 0 in stock, status "Rationed", backorder only.**
 - Max continuous output, Vout 5 V, room temp, still air: ≈ 7.4 A at 6.5 V in (lowest plotted point), ≈ 8.2 A at 12 V. Our 6.0–8.4 V pack is at the left end: **≈ 7.4–7.7 A**, above our 4.9 A design load.
 - Efficiency: the Vin = 6 V curve sits at ≈ 96 % from 1 to ≈ 2.9 A, where the plot ends (no 6 V data above 2.9 A). The 12 V curve is ≈ 95 % at 5 A.
@@ -62,14 +65,17 @@ Hinton's reference walk knee RMS 1.60 / 1.76 Nm (sim) is ≈ 3× the STS3215 rej
 Battery safety (unchanged): 2S P30B, 30 A cell ceiling, BMS trip 28 A nominal, battery bay is a fire-containment zone.
 
 ## 6. STS3046 datasheet and knee candidates (Woz 2026-11-24 12:00 Paris, scoping only, nothing ordered)
+
 **STS3046 PDF** ([FEETECH spec, edition A/0, 2020-06-08](https://www.feetechrc.com/Data/feetechrc/upload/file/20260622/6391772436963747515009746.pdf), read today): input voltage **4-8.4 V** (item 5-7); typical operating voltage 6 V / 7.4 V; stall 32.5 / **40 kg.cm** at 6 / 7.4 V, stall current 2.5 / 3.1 A; rated load 10.5 / **13.5 kg.cm (1.32 Nm)** at 6 / 7.4 V (the wiki website table says 13.3); rated current 1.1 / 1.45 A; Kt 12.5 kg.cm/A; torque off above 70 C; over-current protection when >2 A is sustained (settable). The website table says 6-7.4 V. The PDF covers a full 2S pack (8.4 V); the website does not. The Feetech email of 2026-11-22 (sent, no reply yet) already asks exactly this, so nothing new is sent. Until Feetech answers, the PDF is the higher-revision document we hold, but it is edition A/0 from 2020.
 
 **Knee/hip candidates on the FEETECH TTL bus, rated >= 2.0 Nm (20.4 kg.cm) at 7.4-8.4 V.** Source: FEETECH wiki model pages (copies of feetechrc.com tables, checked by FEETECH 2026-10-02), read today. Prices not read.
+
 | Model | Family | Rated | Stall | Stall I | Mass | Size A x B x C | vs STS3215 pocket (45.2 x 24.7 x 35, 55 g) |
 |---|---|---|---|---|---|---|---|
 | **ST-3095-C001** | STS | **35 kg.cm (3.43 Nm) @ 8.4 V** | 105 kg.cm @ 8.4 V | 10.5 A @ 8.4 V | 194.5 g | 30 x 65 x 48 mm, 15T spline | **does not fit**; +139.5 g per joint |
 | STS3046 (ST-3046-C001) | STS | 13.5 kg.cm (1.32 Nm) @ 7.4 V | 40 kg.cm | 3.1 A | 89 g | 40 x 20 x 43.05 | fails the 2.0 Nm ask |
 | ST-3250-C001 | STS | 16 kg.cm (1.57 Nm) @ **12 V** | 50 kg.cm @ 12 V | 4.2 A | 74.5 g | 45.22 x 24.72 x 35 (fits) | fails even at 12 V; no 12 V rail |
 | HL-3625-C001 | HLS | 6.2 kg.cm @ 7.4 V | 25 kg.cm | 3.0 A | 55 g | 45.2 x 24.7 x 35 (fits) | fails; HLS memory table, not STS |
+
 - **Result: only one FEETECH TTL servo, the ST-3095, meets >= 2.0 Nm rated at 8.4 V**, and it doesn't fit the leg. It is 3.5x the mass, and 10.5 A stall per joint would break the 28 A BMS budget (BOM line 8) with 2-4 of them. I didn't find a third that qualifies. The HL-39xx series is 12 V-rated (HL-3930/3935/3950: 35-50 kg.cm stall @ 12 V), so it is out without a 12 V rail.
 - So a servo swap doesn't close the knee gap at 2S. The levers are the gait's knee demand (Atlas/Hinton), the knee gear ratio or a parallel spring (mechanical redesign), or a 3S/12 V servo bus. A 12 V bus reopens the battery spec (7.4 V 2S, BMS 28 A) and is Chief's and Naoufel's call.
