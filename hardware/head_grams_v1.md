@@ -70,7 +70,7 @@ Chief's provisional budget: head ≤ +13 g over trained (≤ ≈419.6 g). Playgr
 - Path to ≤ 419 g with margin: steps 1–6 plus #4 → ≈414 g, 5.4 g under the 419.6 g budget. Without #4 the best is 421.2 g (fails by 1.6 g).
 - #4 is the deciding line. It depends on the upstream `cam` mass inside the 45.6 g package, which is not in the XML; someone with Onshape access must read it. If the CM3 + bracket can't come in ≤ cam + 5.5 g, the head fails the budget.
 - Small extras, not counted: amp breakout merged onto the HAT (≈ −1.5 g est.), low-profile 40-pin header instead of a stacking header (≈ −1.5 g est.).
-- CoM positions of cuts are Woz estimates: eye (9.9, −40, 25), caps (12, 47, 6), speaker stand (10.1, −70, 24), bulbs (10, 0, 30), camera (1, 0, −51).
+- CoM positions of cuts are Woz estimates: eye (10.35, −40, −58), caps (12, 47, 6), speaker stand (10.1, −70, 24), bulbs (10.35, ±40, −55), camera (1, 0, −51). Eye and bulbs **corrected 2026-11-24**: they were (9.9, −40, 25) and (10, 0, 30). The CoM columns in this table and in the Hinton rows below still use the old positions; use the corrected rows in "Correction: eye and bulb positions".
 
 ### Where the extra grams sit (+32 g, 438.6 case)
 
@@ -109,6 +109,42 @@ Point-mass deltas on the trained head (Playground `head_assembly` @ f698836 = b9
 - **Y_RIGHT = −72 mm assumption (410.0 and 407.4 rows):** the amp breakout and the ballast sit at (10, −72, 25), my estimate of the inner right wall, mirrored from the mic wall. Not ray-cast against the head shell. Mic mirrored to (9.9, −74.5, 25). Ballast for y −4.2 is grams = m·(y − (−4.2)) / (−4.2 − Y_RIGHT); a wall 1 mm further in adds ≈0.06 g.
 - Not counted in either row: neck pigtail/connector mass that replaces the board in the head.
 - Hinton's lateral band (via Chief 2026-11-24): Δy ∈ [−1.55, +1.0] mm, absolute y −5.46 … −2.91 mm; aim y −4.2 so the ±0.6 mm centroid uncertainty fits.
+
+## Correction: eye and bulb positions (Woz 2026-11-24 15:20 Paris)
+
+- **What was wrong.** Cut #1 (right eye) and cut #6 (bulbs) were placed at (9.9, −40, 25) and (10, 0, 30). The eye holes are in the front wall. A circle fit to the head.stl rim (`woz/eyefit/rimfit.py` on razer, 6 slices z −58.8 … −56.3, head_assembly frame) gives Ø20.00 centred (10.35, +40.00) and Ø25.00 centred (10.35, −40.00), rms ≤ 0.006 mm, max − min radius ≤ 0.01 mm.
+- **What the upstream parts are** (STL, `print/`): left_eye and right_eye are bezels with a Ø25 bore (radial r 12.50), 35 × 35 × 4.3 and 40 × 40 × 8.4 mm. bulb.stl is a 35 × 35 × 2 mm plate. Four Ø2 holes sit on a 20 mm square round the left hole and a 25 mm square round the right one.
+- **New positions:** eye (10.35, −40, −58), bulbs (10.35, ±40, −55). The z values are Woz estimates: the parts are not in robot.xml and the Onshape placement is not read. ±6 mm in z moves the head CoM by ≤ 0.06 mm.
+- **Effect:** masses unchanged; CoM z up ≈ 1.2 mm; x and y unchanged within 0.01 mm. `tools/eyerow.py` reproduces the published rows exactly with the old positions, then gives the corrected rows.
+
+| Row (corrected) | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
+|---|---|---|---|---|
+| B 421.2 | 421.24 | (8.232, −1.685, 21.782) | (+0.08, +2.22, −0.99) | 2.48212e-3 1.70675e-3 1.09876e-3 −8.37857e-6 8.79616e-5 2.21412e-6 |
+| A 414.2 | 414.24 | (8.354, −1.714, 23.012) | (+0.20, +2.19, +0.24) | 2.44439e-3 1.66868e-3 1.09837e-3 −8.46532e-6 9.17082e-5 1.34109e-6 |
+| 412.7 | 412.74 | (8.322, −1.891, 23.074) | (+0.17, +2.02, +0.30) | 2.44038e-3 1.66813e-3 1.09469e-3 −7.83124e-6 9.14868e-5 9.35099e-8 |
+| 410.0 (3.88 g ballast) | 410.02 | (8.199, −4.200, 23.367) | (+0.04, −0.29, +0.59) | 2.44454e-3 1.66569e-3 1.10030e-3 −3.89654e-6 9.04815e-5 −4.49087e-6 |
+| 407.4 (2.75 g ballast) | 407.39 | (8.161, −4.200, 23.426) | (+0.01, −0.29, +0.65) | 2.43495e-3 1.66511e-3 1.09104e-3 −3.35894e-6 9.02546e-5 −5.95007e-6 |
+
+### Eye light net mass (replaces cut #6)
+
+- **In, per eye:** Cree C513A-MSN + wire 0.3 g (est., not read), tapered PETG tube (half of a straight 1.2 mm wall over 22.35 mm, disc rear −57.55 to epoxy −35.2), diffuser disc sized to its own hole. Centroid (10.35, ±40, −47). Densities PETG 1.27, PMMA 1.19 g/cm³ are typical values, not datasheet.
+- **Out:** both upstream bulb plates, 2.10 g each (solid-PLA STL volume, an upper bound). The bezels stay (Luxo look parts). The upstream glass is not itemised, so its removal is not counted: if the disc replaces it, the real net is lower.
+
+| Build | Left Ø20 (g) | Right Ø25 (g) | Pair (g) | Net vs upstream bulbs | Net vs the cut-#6 rows |
+|---|---|---|---|---|---|
+| Proto, PETG 1.0 mm disc | 1.83 | 2.33 | 4.16 | −0.04 g | +1.96 g |
+| Final, PMMA 2.0 mm disc | 2.18 | 2.87 | 5.05 | +0.85 g | +2.85 g |
+
+| Row + eye light (proto) | Mass (g) | CoM (mm) | Δ from trained (mm) | fullinertia |
+|---|---|---|---|---|
+| A 414.2 | 416.20 | (8.363, −1.753, 22.725) | (+0.21, +2.15, −0.05) | 2.45442e-3 1.67564e-3 1.10145e-3 −8.43289e-6 9.19457e-5 1.72898e-7 |
+| 410.0, ballast 3.71 g | 411.81 | (8.208, −4.200, 23.074) | (+0.05, −0.29, +0.30) | 2.45381e-3 1.67274e-3 1.10254e-3 −3.89254e-6 9.07395e-5 −5.38935e-6 |
+| 407.4, ballast 2.58 g | 409.18 | (8.171, −4.200, 23.131) | (+0.02, −0.29, +0.36) | 2.44423e-3 1.67218e-3 1.09328e-3 −3.35494e-6 9.05173e-5 −6.84855e-6 |
+| 410.0 final disc, ballast 3.65 g | 412.64 | (8.212, −4.200, 22.922) | (+0.06, −0.29, +0.15) | 2.45929e-3 1.67712e-3 1.10364e-3 −3.89110e-6 9.08735e-5 −5.68405e-6 |
+| 407.4 final disc, ballast 2.52 g | 410.01 | (8.175, −4.200, 22.978) | (+0.02, −0.29, +0.21) | 2.44972e-3 1.67657e-3 1.09438e-3 −3.35350e-6 9.06538e-5 −7.14325e-6 |
+
+- The 441.3 / 442.2 g figures from the 2026-11-24 eye-fit report are withdrawn: they were gross additions (no bulbs out) on the stale 434.6 g baseline.
+- Nothing is weighed. A bench weigh of the bulb plates and the printed tube settles the net.
 
 ## HAT-to-trunk option: neck conductors (scoping, not a change)
 
