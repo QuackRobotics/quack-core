@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Quack Robotics contributors
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Contributing to Quack Robotics
 
 > Welcome! This guide covers the contribution workflow for all 7 repositories in the `QuackRobotics` organization.
@@ -37,6 +42,7 @@ git commit -s -m "your message"
 ```
 
 The `-s` flag appends:
+
 ```
 Signed-off-by: Your Name <email@example.com>
 ```
@@ -57,6 +63,7 @@ Signed-off-by: Your Name <email@example.com>
 | Protobuf | `buf format` | `buf lint` | `buf.yaml`, `buf.lock` |
 
 **Run locally before pushing:**
+
 ```bash
 # Rust
 cargo fmt --all -- --check
@@ -115,24 +122,28 @@ Every PR must:
 **Every source file must start with a license header.**
 
 ### Rust (`.rs`)
+
 ```rust
 // SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 // SPDX-License-Identifier: Apache-2.0
 ```
 
 ### Python (`.py`)
+
 ```python
 # SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 # SPDX-License-Identifier: Apache-2.0
 ```
 
 ### TypeScript/JavaScript (`.ts`, `.js`, `.tsx`, `.jsx`)
+
 ```typescript
 // SPDX-FileCopyrightText: 2026 Quack Robotics contributors
 // SPDX-License-Identifier: Apache-2.0
 ```
 
 ### Markdown (`.md`)
+
 ```markdown
 <!--
 SPDX-FileCopyrightText: 2026 Quack Robotics contributors
@@ -149,40 +160,47 @@ See [REUSE spec](https://reuse.software/spec/) for details.
 ## 7. Repository-Specific Notes
 
 ### quack-hardware
+
 - KiCad 8+ for PCBA
 - FreeCAD 1.0+ for mechanical
 - BOM exported as CSV (`bom.csv`) with LCSC/DigiKey part numbers
 - Assembly PDF generated from KiCad + FreeCAD
 
 ### quack-firmware
+
 - Rust 2021 edition, MSRV = latest stable - 2
 - `no_std` + `embassy` for Radxa Zero 3W
 - Servo driver: PCA9685 (I2C) → custom STM32 (SPI) in v0.2
 - Build: `cargo build --release --target thumbv7em-none-eabihf`
 
 ### quack-api
+
 - Axum 0.7 + Tonic 0.10 (gRPC)
 - OpenAPI spec at `docs/openapi.yaml`
 - SQLite (dev) / PostgreSQL (prod) via SQLx
 - Auth: JWT + device code flow
 
 ### quack-ml
+
 - Isaac Lab 2.0 + PyTorch 2.3
 - ONNX export via `torch.onnx.export`
 - Training configs in `configs/` (Hydra)
 - Reproducibility: seed, git SHA, Docker image digest logged
 
 ### quack-sim
+
 - MuJoCo 3.2+ (MJCF)
 - Assets in `assets/` (STL, OBJ, textures)
 - Headless rendering via `mujoco-python` + `egl`
 
 ### quack-dashboard
+
 - Three.js r160+ + React 18 + Vite
 - WebGPU preferred, WebGL fallback
 - Real-time via WebSocket to quack-api
 
 ### quack-core (this repo)
+
 - Governance, RFCs, docs (mkdocs-material)
 - Auto-deploy to GitHub Pages on merge to `main`
 - Versioned docs: `v0.x`, `main`
@@ -218,10 +236,11 @@ See [REUSE spec](https://reuse.software/spec/) for details.
 ## 10. Recognition
 
 Contributors are recognized in:
+
 - `AUTHORS.md` (auto-generated from git)
 - Release changelogs
 - Quarterly Quackathon hall of fame
 
 ---
 
-*Happy hacking! 🦆*
+Happy hacking! 🦆
