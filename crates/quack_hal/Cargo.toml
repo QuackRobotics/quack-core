@@ -1,0 +1,9 @@
+[package]
+name = "quack_hal"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Quack-core hardware abstraction: joint name map, head safety clamp, power-fail debounce."
+publish = false
+
+[dependencies]
