@@ -239,3 +239,23 @@ Source: Molicel INR-18650-P30B product data sheet, "Discharge Rate Characteristi
 | 4 A | ~11 | ~27 |
 
 - With a per-unit gate of ≤ 7.60 V (packs screened at ≤ 50 mΩ) the window grows. Reading the same curve, 3.80 V/cell sits at ~1,150 mAh, which is ~23 min at 3 A (est.).
+
+## Hold-up re-derived for supercaps moved to the trunk (Woz 2026-11-24 09:30, PROPOSED; blocker per Chief 2026-11-23 18:34)
+
+Inputs, unchanged from the table above: 5 F stack, LDO path 0.26 Ω (0.2 Ω pass FET + 0.06 Ω ESR, Woz figures), worst stack start 5.17 V, LDO 4.29–4.51 V, backup load 1.8 A (Woz budget, not measured), t = C·ΔV/I. Neck pair R = 21 mΩ round trip for 18 AWG at ~1 m (row "PI 5 V pair" above, Woz calc). Connector contact R is NOT in that figure; I have no datasheet value, so it is a sensitivity row.
+
+| Layout | Path R | Window (worst) | Hold-up worst | Camera off (1.5 A) | Nominal |
+|---|---|---|---|---|---|
+| Today: caps + LTC3226 in head | 0.260 Ω | 0.192 V | **0.53 s** | 0.90 s | 1.20 s |
+| B: caps in trunk, LTC3226 stays in head (new cap pair crosses the neck) | 0.281 Ω | 0.154 V | **0.43 s** | 0.80 s | 1.10 s |
+| B + 20 mΩ connector contacts (assumption) | 0.301 Ω | 0.118 V | **0.33 s** | 0.70 s | 1.00 s |
+
+Option A (caps AND LTC3226 in the trunk, backup output rides the PI pair up): the window stays 0.53 s, but the Pi sees the LDO output minus 1.8 A × 21 mΩ = 0.038 V. At the 4.29 V LDO low corner that is **4.252 V at the Pi against the 4.25 V sync gate: 2 mV margin before any contact R. Fails.** Raising the LDO to buy it back eats the same 0.04 V from the window (≈0.42 s) and squeezes the PFI-low (4.60 V) vs LDO-high margin to ~50 mV. A is no better than B and is rejected.
+
+Consequences of B:
+- SD-sync budget (half of hold-up) drops from 0.26 s to **0.21 s** (0.16 s if contacts add 20 mΩ). Vmin bench pass 3 becomes "worst of 10 ≤ 0.21 s", throttled.
+- Neck conductors +2 (VCAP, cap GND), +1 more if the stack midpoint/balance node must also cross; I have not confirmed the LTC3226 balance-pin arrangement from the ADI datasheet (fetch failed today). 16 → 18–19 conductors through ±160° head yaw.
+- Cap pair carries the 0.36 A charge current in normal running and 1.8 A in backup; 18 AWG matches the PI pair.
+- Back-feed test (above) is unchanged: the AUX path is still only via LTC3226 → VIN → PI pair.
+
+Verdict: the move saves 6.2 g of head mass (catalogue, 02:45 table) and costs ~0.10 s of hold-up (0.53 → 0.43 s worst, 0.33 s with contacts) plus 2–3 neck conductors. **Viable only if the throttled sync is ≤ 0.21 s on the Vmin bench; otherwise the caps stay in the head**, or go 2S2P (10 F, which doubles every hold-up figure here) at the cost of the mass saving. Chief rules. Bench replaces every figure here; nothing is ordered.
