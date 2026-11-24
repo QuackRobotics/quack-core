@@ -3,26 +3,27 @@ Copyright 2026 Quack Robotics Contributors
 
 This product includes software and designs derived from:
 - Open Duck Mini v2 by apirrone (https://github.com/apirrone/Open_Duck_Mini)
+  Commit: b23317a (v2 branch)
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 
-The Open Duck Mini v2 project includes:
-- CAD models (mechanical design, exported from Onshape)
-- MJCF / MuJoCo simulation models
-- Bill of Materials (BOM)
-- Build, assembly, and print guides
-- Runtime code (Open_Duck_Mini_Runtime)
-- Training workflows and policies
+The Apache-2.0 license covers the following assets in apirrone/Open_Duck_Mini@b23317a:
+- CAD models / STL files (mechanical design, exported from Onshape)
+- MJCF / MuJoCo simulation model: mini_bdx/robots/open_duck_mini_v2/robot.xml
+- ONNX policy checkpoints: BEST_WALK_ONNX.onnx, BEST_WALK_ONNX_2.onnx (repo root)
 
-All upstream assets are licensed under Apache-2.0.
+The following upstream assets have UNSTATED or PENDING licenses:
+- Open_Duck_Mini_Runtime (separate repo): no LICENSE file found — used for reference only, licence pending, not redistributed
+- Open_Duck_Playground @ b9be205 (separate repo): no LICENSE file found — licence pending, not redistributed. The CI sim gate downloads its MJCF scene, meshes and reference-motion pickle at run time (sha256-pinned in sim/playground.SHA256SUMS); sim/sim_gate.py is our own reimplementation of its inference loop, citing file and line
+- BOM Google Sheet (external): licence unstated
+- Onshape live document (external): licence unstated
+- Tnkr.ai build guides (external): site terms apply
 
 Modifications made by Quack Robotics:
 - Reorganized repository structure into 7 specialized repos
 - Added governance, CI/CD, and release automation
-- Adapted simulation models for MuJoCo/Isaac Lab validation gates
-- Extended training pipeline for custom policies
 
 This software is distributed under the Apache License, Version 2.0.
 See LICENSE for the full license text.
