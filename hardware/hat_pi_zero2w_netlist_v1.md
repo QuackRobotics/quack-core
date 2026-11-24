@@ -43,6 +43,7 @@ Conventions: refdes are provisional. `J` = connector, `R` = resistor, `C` = capa
 | 2 | GND_PI | 18 AWG | 2.16 A |
 | 3 | 5V_AUX | 20 AWG | 2.76 A peak (3.01 A bench-only peak) |
 | 4 | GND_AUX | 20 AWG | 2.76 A |
+
 Per-pin ≤ 2.76 A design. Terminal rating and an 18 AWG crimp: **confirm at schematic** (not read from the Molex datasheet). Strain relief on the trunk side of the neck pitch joint.
 
 ### J3: neck signal connector, JST-GH 12-pin (Atlas + Chief ack 2026-11-24): 11 used, 1 spare
@@ -61,6 +62,7 @@ Order chosen by Woz: each I²C line next to its own return; slow GPIOs grouped; 
 | 10 | PROJ_EN | GPIO25 |
 | 11 | SW_EN | GPIO17; broken wire = servos off |
 | 12 | SPARE | NC, routed to TP3 |
+
 Neck total = 4 (J2) + 11 (J3) + 3 (STS bus, own Feetech lead) = **18**, matching the 1,000-cycle flex test (harness_neck_v1 l.46).
 
 ### J4: supercap stack, 2-pin (only if caps-to-trunk is chosen; footprint both options, pick at freeze)
