@@ -59,4 +59,24 @@ Behaviour fit:
   only.
 
 Audio: capped at -12 dBFS while the antennas move (provisional). Chirps and beak clicks that coincide with antenna
-motion respect udio_cap_dbfs_antenna_moving (default -12).
+motion respect `audio_cap_dbfs_antenna_moving` (default -12).
+
+## Update 2026-11-24 11:14 ? interim head envelope v2 (Atlas b23317a; supersedes the 11:01 box)
+
+Atlas swept 36,855 poses (minimum clearance 4.5 mm). Interim limits while the projector is mounted:
+neck_pitch >= 0 deg, head_pitch >= -22.5 deg, |head_roll| <= 22.5 deg, head_yaw free.
+Change from the 11:01 box: proj_box_neck_pitch_min_deg goes from -9.4 to 0 (no neck pitch below zero at all).
+Until the HAL clamp lands, head offsets are rejected while the projector is mounted (eyes, beak, sound only).
+
+The final HAL clearance table will be tighter. Expected rejections: head_yaw near +35 deg or near -115 deg combined
+with full head pitch and roll. Choreography rule while mounted: no move is keyed into those corners. Near those yaw
+angles, pitch and roll accents stay small; the corner keep-out is a parameter set
+(proj_corner_yaw_deg = [+35, -115], proj_corner_yaw_halfwidth_deg, proj_corner_pitch_roll_scale), replaced by the
+HAL table when it lands.
+
+Behaviour fit with neck_pitch >= 0:
+- light_the_path: still body pitch only. idle_tired droop comes from head_pitch (down to the -22.5 deg limit) and
+  eyelid-style blinks, never from neck pitch.
+- show_and_tell: yaw turn to the image; if the image sits near +35 deg or -115 deg yaw, the turn is pure yaw, no tilt.
+- caught_out: sheepish glance is yaw plus a small roll; the lean-back stays in the body.
+
